@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""
+六个宏观因子月度相关性热力图。
+
+因子来源：
+  增长因子  growth/raw_growth_factor.csv          → raw_growth_factor
+  通胀因子  inflasion/inflation_factor.csv         → inflation_factor
+  利率因子  interest rate/rate_factor.csv          → rate_factor（十年国债收益率 %）
+  信用因子  credit/credit_factor.csv               → credit_factor（AA中票−国开收益率利差水平，%）
+  地缘因子  politics/hf_geo_factor_synthetic.csv     → 沪金+布伦特原油绝对价格线性拟合（月末值）
+  汇率因子  exchange/dxy_yahoo.csv                 → close 月末绝对水平
+
+运行: python plot_macro_factor_corr.py
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.colors import to_rgb
+
+ROOT = Path(__file__).parent
+
+FACTOR_LABELS = [
+    "增长因子",
+    "通胀因子",
+    "利率因子",
+    "信用因子",
+    "汇率因子",
+    "地缘因子",
+]
+
+FACTOR_PATHS = {
+    "增长因子": (ROOT / "growth" / "growth_factor.csv", "date", "raw_growth_factor"),
+    "通胀因子": (ROOT / "inflasion" / "inflation_factor.csv", "date", "inflation_factor"),
+    "利率因子": (ROOT / "interest rate" / "rate_factor.csv", "date", "rate_factor"),
+    "信用因子": (ROOT / "credit" / "credit_factor.csv", "date", "credit_factor"),
+}
+
+OUTPUT_PANEL = ROOT / "macro_factor_monthly.csv"
+OUTPUT_CORR = ROOT / "macro_factor_corr.csv"
+OUTPUT_JSON = ROOT / "macro_factor_corr.json"
+OUTPUT_PNG = ROOT / "macro_factor_corr_heatmap.png"
+SAMPLE_START = "2021-01"
+
+
+def setup_chinese_font() -> None:
+    plt.rcParams["font.sans-serif"] = [
+        "PingFang SC", "Heiti SC", "STHeiti", "SimHei", "Arial Unicode MS", "DejaVu Sans"
+    ]
+    plt.rcParams["axes.unicode_minus"] = False
+
+
+def load_monthly_factor(path: Path, date_col: str, value_col: str) -> pd.Series:
+    df = pd.read_csv(path, parse_dates=[date_col])
+    monthly = df.groupby(pd.to_datetime(df[date_col]).dt.to_period("M"))[value_col].last()
+    return monthly.dropna()
+
+
+def load_geo_monthly_level() -> pd.Series:
+    geo = pd.read_csv(ROOT / "politics" / "hf_geo_factor_synthetic.csv", parse_dates=["date"])
+    monthly = geo.sort_values("date").set_index("date")["hf_geo_factor"].astype(float).resample("ME").last()
+    monthly.index = monthly.index.to_period("M")
+    return monthly.dropna()
+
+
+def load_dxy_monthly_level() -> pd.Series:
+    dxy = pd.read_csv(ROOT / "exchange" / "dxy_yahoo.csv", parse_dates=["Date"])
+    dxy["date"] = pd.to_datetime(dxy["Date"], utc=True).dt.tz_convert(None)
+    monthly = dxy.set_index("date")["close"].resample("ME").last()
+    monthly.index = monthly.index.to_period("M")
+    return monthly.dropna()
+
+
+def build_factor_panel() -> pd.DataFrame:
+    series: dict[str, pd.Series] = {}
+    for label, (path, date_col, value_col) in FACTOR_PATHS.items():
+        series[label] = load_monthly_factor(path, date_col, value_col)
+    series["地缘因子"] = load_geo_monthly_level()
+    series["汇率因子"] = load_dxy_monthly_level()
+    return pd.DataFrame(series)[FACTOR_LABELS]
+
+
+def cell_facecolor(val: float, is_diag: bool) -> tuple[float, float, float]:
+    if is_diag:
+        return to_rgb("#e53935")
+    if np.isnan(val):
+        return (1.0, 1.0, 1.0)
+    v = float(np.clip(val, -1.0, 1.0))
+    if v > 0:
+        t = v
+        return (1.0, 1.0 - 0.55 * t, 1.0 - 0.55 * t)
+    if v < 0:
+        t = abs(v)
+        return (1.0 - 0.55 * t, 1.0, 1.0 - 0.45 * t)
+    return (1.0, 1.0, 1.0)
+
+
+def plot_corr_table(corr: pd.DataFrame, start: str, end: str, n_months: int) -> None:
+    setup_chinese_font()
+    labels = corr.columns.tolist()
+    n = len(labels)
+    data = corr.values
+
+    table_data = [[""] + labels]
+    for i, row_label in enumerate(labels):
+        row = [row_label] + [f"{data[i, j]:.2f}" if not np.isnan(data[i, j]) else "—" for j in range(n)]
+        table_data.append(row)
+
+    fig, ax = plt.subplots(figsize=(9.5, 8.0))
+    ax.axis("off")
+    fig.suptitle(
+        f"样本区间：{start} ~ {end}（{n_months} 个月）",
+        fontsize=12,
+        fontweight="bold",
+        y=0.98,
+    )
+    table = ax.table(cellText=table_data, cellLoc="center", loc="center")
+    table.auto_set_font_size(False)
+    table.set_fontsize(11)
+    table.scale(1.15, 2.0)
+
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor("#000000")
+        cell.set_linewidth(1.2)
+        if row == 0 or col == 0:
+            cell.set_facecolor("#ffffff")
+            if row > 0 or col > 0:
+                cell.get_text().set_fontweight("bold")
+            continue
+        val = data[row - 1, col - 1]
+        is_diag = row == col
+        cell.set_facecolor(cell_facecolor(val, is_diag))
+        if is_diag:
+            cell.get_text().set_color("white")
+            cell.get_text().set_fontweight("bold")
+        else:
+            cell.get_text().set_color("#111111")
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.savefig(OUTPUT_PNG, dpi=150, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def build_corr_payload(panel: pd.DataFrame, start: str, end: str) -> dict:
+    subset = panel.loc[start:end].dropna(how="any")
+    if len(subset) < 3:
+        raise ValueError(f"有效样本不足: {start} ~ {end} 仅 {len(subset)} 个月")
+    corr = subset.corr(method="pearson")
+    return {
+        "labels": FACTOR_LABELS,
+        "months": panel.dropna(how="any").index.astype(str).tolist(),
+        "start": str(subset.index.min()),
+        "end": str(subset.index.max()),
+        "n_months": len(subset),
+        "corr": [[round(v, 4) for v in row] for row in corr.values.tolist()],
+    }
+
+
+def main() -> None:
+    panel = build_factor_panel()
+    if SAMPLE_START:
+        panel = panel[panel.index >= pd.Period(SAMPLE_START, freq="M")]
+    panel.index = panel.index.astype(str)
+
+    panel_out = panel.copy()
+    panel_out.reset_index(names="ym").to_csv(OUTPUT_PANEL, index=False, encoding="utf-8-sig", float_format="%.6f")
+
+    common = panel.dropna(how="any")
+    start = str(common.index.min()) if len(common) else "—"
+    end = str(common.index.max()) if len(common) else "—"
+    corr = common.corr(method="pearson", min_periods=12)
+    corr.to_csv(OUTPUT_CORR, encoding="utf-8-sig", float_format="%.4f")
+
+    payload = build_corr_payload(panel, start, end)
+    payload["default_start"] = payload["start"]
+    payload["default_end"] = payload["end"]
+    OUTPUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    plot_corr_table(corr, start, end, len(common))
+
+    print("宏观因子月度面板:", OUTPUT_PANEL)
+    print("相关性矩阵:", OUTPUT_CORR)
+    print("网页默认 JSON:", OUTPUT_JSON)
+    print("热力图:", OUTPUT_PNG)
+    print(f"共同样本: {len(common)} 个月 ({start} ~ {end})")
+    print("\n相关系数矩阵:")
+    print(corr.round(2).to_string())
+
+
+if __name__ == "__main__":
+    main()

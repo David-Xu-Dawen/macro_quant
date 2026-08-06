@@ -1,0 +1,28 @@
+{
+  "lags_months": {
+    "pork": 0,
+    "brent": 1,
+    "rebar": 3
+  },
+  "weights": {
+    "pork": 0.2009243033896923,
+    "brent": 0.4034172350559661,
+    "rebar": 0.3956584615543416
+  },
+  "betas": {
+    "pork": 0.015862122356574845,
+    "brent": 0.03184808126868504,
+    "rebar": 0.031235558977735382
+  },
+  "intercept": 0.8598498331881956,
+  "r_squared": 0.6892560687241982,
+  "adj_r_squared": 0.6799337507859242,
+  "bic": 281.3196674549464,
+  "n_obs": 104,
+  "assets": [
+    "pork",
+    "brent",
+    "rebar"
+  ],
+  "price_file": "commodities.csv"
+}

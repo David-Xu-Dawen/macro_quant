@@ -1,0 +1,30 @@
+{
+  "benchmark": "bond_gov",
+  "forward_days": 5,
+  "features": [
+    "ret_1d",
+    "ret_5d",
+    "ret_10d",
+    "ret_20d",
+    "ret_60d",
+    "vol_20d",
+    "vol_60d",
+    "mom_20_60",
+    "ma_ratio_20",
+    "ma_ratio_60",
+    "drawdown_60",
+    "rel_ret_5d",
+    "rel_ret_20d",
+    "beta_proxy_60",
+    "excess_1d",
+    "excess_5d",
+    "excess_20d",
+    "spread20_vs_csi300",
+    "spread20_vs_bond_gov",
+    "spread20_vs_gold_au",
+    "spread20_vs_crude_sc",
+    "spread20_vs_spx",
+    "spread20_vs_hsi"
+  ],
+  "best_iteration": 10
+}

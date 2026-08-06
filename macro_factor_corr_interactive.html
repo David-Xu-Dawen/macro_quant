@@ -1,0 +1,4317 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>宏观量化工作台</title>
+  <style>
+    :root {
+      --bg: #f7f3ee;
+      --paper: #fffaf4;
+      --ink: #1f2933;
+      --muted: #667085;
+      --border: #1f1f1f;
+      --accent: #8b1e1e;
+      --card: #ffffff;
+      --shadow: 0 16px 45px rgba(61, 47, 35, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(214, 103, 70, 0.10), transparent 28%),
+        linear-gradient(135deg, #f8f1e8 0%, #f4f7f2 100%);
+      color: var(--ink);
+      font-family: "PingFang SC", "Heiti SC", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    .page {
+      width: min(1380px, calc(100vw - 48px));
+      margin: 28px auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0.04em;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      padding: 9px 14px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.62);
+      color: #344054;
+      font-size: 13px;
+    }
+
+    .inline-badge {
+      padding: 6px 10px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(760px, 0.58fr) minmax(420px, 0.42fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .matrix-compare {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(520px, 1fr));
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .heatmap-panel {
+      padding: 22px 22px 18px;
+      justify-self: start;
+      width: 100%;
+    }
+
+    .matrix-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .matrix-title strong {
+      font-size: 17px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #344054;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .controls select,
+    .controls button {
+      height: 34px;
+      border: 1px solid rgba(0, 0, 0, 0.16);
+      border-radius: 9px;
+      background: #fff;
+      color: #1f2933;
+      font: inherit;
+      font-size: 13px;
+      padding: 0 10px;
+    }
+
+    .controls button {
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+
+    .controls button:hover {
+      background: #f8fafc;
+      border-color: #2b6cb0;
+    }
+
+    .range-status {
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    table.heatmap {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: white;
+      border: 2px solid var(--border);
+    }
+
+    .heatmap th,
+    .heatmap td {
+      border: 1.6px solid var(--border);
+      height: 64px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 22px;
+      line-height: 1;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, outline 0.12s ease;
+    }
+
+    .heatmap th {
+      background: #fff;
+      font-weight: 700;
+      font-size: 19px;
+      white-space: nowrap;
+    }
+
+    .heatmap th.corner {
+      background: #fff;
+    }
+
+    .heatmap td {
+      cursor: pointer;
+      user-select: none;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .heatmap td:hover,
+    .heatmap td.active {
+      position: relative;
+      z-index: 2;
+      outline: 3px solid #2b6cb0;
+      transform: scale(1.025);
+      box-shadow: 0 8px 20px rgba(43, 108, 176, 0.24);
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-bar {
+      flex: 1;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #73c37b 0%, #ffffff 50%, #e53935 100%);
+      border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    .detail-panel {
+      padding: 22px;
+      min-height: 610px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .detail-kicker {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .detail-title {
+      margin: 0 0 10px;
+      font-size: 24px;
+    }
+
+    .corr-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: #f5f5f4;
+      color: #111827;
+      font-weight: 700;
+      margin: 8px 0 18px;
+    }
+
+    .section {
+      padding: 14px 0;
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .section h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #344054;
+    }
+
+    .section p {
+      margin: 0;
+      color: #475467;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .factor-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #475467;
+      background: #fff;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-left: 4px solid #d97706;
+      background: #fff7ed;
+      color: #7c2d12;
+      font-size: 13px;
+      line-height: 1.65;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 1120px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .matrix-compare {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-panel {
+        position: static;
+      }
+    }
+
+    .workbook {
+      position: relative;
+      padding-bottom: 42px;
+    }
+
+    .sheet-panel {
+      display: none;
+    }
+
+    .sheet-panel.active {
+      display: block;
+    }
+
+    .sheet-tabs {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      padding: 0 12px;
+      background: #e8e4df;
+      border-top: 1px solid #c8c4bf;
+      z-index: 100;
+      height: 36px;
+    }
+
+    .sheet-tab {
+      border: 1px solid #c8c4bf;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      background: #d9d5d0;
+      color: #475467;
+      padding: 7px 18px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .sheet-tab.active {
+      background: #fff;
+      color: #1f2933;
+      font-weight: 700;
+      padding-bottom: 9px;
+      margin-top: 0;
+      border-color: #b8b4af;
+    }
+
+    .chat-wrap {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .chat-status.ok { color: #047857; }
+    .chat-status.err { color: #b91c1c; }
+
+    .chat-panel {
+      padding: 22px;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-log {
+      flex: 1;
+      min-height: 380px;
+      max-height: 58vh;
+      overflow-y: auto;
+      padding: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      background: #fff;
+      margin-bottom: 14px;
+    }
+
+    .chat-msg {
+      margin-bottom: 14px;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .chat-msg .role {
+      font-size: 12px;
+      font-weight: 700;
+      color: #667085;
+      margin-bottom: 4px;
+    }
+
+    .chat-msg.user .role { color: #1d4ed8; }
+    .chat-msg.assistant .role { color: #8b1e1e; }
+
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .chat-input-row textarea {
+      flex: 1;
+      min-height: 72px;
+      resize: vertical;
+      border: 1px solid rgba(0, 0, 0, 0.16);
+      border-radius: 12px;
+      padding: 12px;
+      font: inherit;
+      font-size: 14px;
+    }
+
+    .chat-input-row button {
+      height: 42px;
+      min-width: 88px;
+      border: none;
+      border-radius: 10px;
+      background: #8b1e1e;
+      color: #fff;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .chat-input-row button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .chat-tools {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #475467;
+    }
+
+    .chat-tools select {
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.16);
+      padding: 0 8px;
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      padding: 18px 0 58px;
+    }
+
+    .page {
+      animation: fadeIn 0.22s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      padding: 20px 22px;
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 250, 244, 0.72)),
+        radial-gradient(circle at 82% 20%, rgba(139, 30, 30, 0.12), transparent 34%);
+      box-shadow: 0 18px 55px rgba(31, 41, 51, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .header h1,
+    .chat-header h1 {
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: -0.02em;
+    }
+
+    .badge,
+    .chat-status {
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(10px);
+    }
+
+    .panel {
+      overflow: hidden;
+      border-color: rgba(255, 255, 255, 0.7);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
+      backdrop-filter: blur(16px);
+    }
+
+    .matrix-title {
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .matrix-title strong {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .matrix-title strong::before {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #8b1e1e;
+      box-shadow: 0 0 0 5px rgba(139, 30, 30, 0.1);
+      content: "";
+    }
+
+    .controls {
+      gap: 8px;
+      border-color: rgba(139, 30, 30, 0.08);
+      background: rgba(248, 250, 252, 0.82);
+    }
+
+    .controls button,
+    .chat-tools button,
+    .quick-prompt {
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 999px;
+      background: #fff;
+      color: #344054;
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+    }
+
+    .controls button:hover,
+    .chat-tools button:hover,
+    .quick-prompt:hover {
+      transform: translateY(-1px);
+      border-color: rgba(139, 30, 30, 0.35);
+      background: #fff7ed;
+      box-shadow: 0 8px 22px rgba(139, 30, 30, 0.12);
+    }
+
+    .heatmap {
+      overflow: hidden;
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+    }
+
+    table.heatmap {
+      border: 0;
+    }
+
+    .heatmap th,
+    .heatmap td {
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      height: clamp(52px, 6vw, 68px);
+    }
+
+    .heatmap th {
+      background: #f8fafc;
+      color: #334155;
+      font-size: clamp(13px, 1.6vw, 18px);
+    }
+
+    .heatmap td {
+      font-size: clamp(16px, 2.2vw, 22px);
+    }
+
+    .detail-panel {
+      min-height: auto;
+    }
+
+    .corr-pill {
+      border: 1px solid rgba(139, 30, 30, 0.12);
+      background: linear-gradient(135deg, #fff7ed, #fff);
+      color: #7c2d12;
+    }
+
+    .section {
+      margin-top: 10px;
+      padding: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 14px;
+      background: rgba(248, 250, 252, 0.72);
+    }
+
+    .section:first-of-type {
+      margin-top: 0;
+    }
+
+    .factor-chips {
+      margin-top: 16px;
+    }
+
+    .chip {
+      border-color: rgba(139, 30, 30, 0.14);
+      background: #fffaf4;
+    }
+
+    .chat-wrap {
+      max-width: 1080px;
+    }
+
+    .chat-header {
+      padding: 20px 22px;
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(246, 248, 251, 0.82)),
+        radial-gradient(circle at 18% 10%, rgba(43, 108, 176, 0.10), transparent 30%);
+      box-shadow: 0 18px 55px rgba(31, 41, 51, 0.08);
+    }
+
+    .chat-status {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .chat-status.ok {
+      border-color: rgba(4, 120, 87, 0.18);
+      background: #ecfdf5;
+    }
+
+    .chat-status.err {
+      border-color: rgba(185, 28, 28, 0.18);
+      background: #fef2f2;
+    }
+
+    .chat-panel {
+      min-height: min(720px, calc(100vh - 190px));
+      padding: 0;
+    }
+
+    .chat-tools {
+      margin: 0;
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(248, 250, 252, 0.74);
+    }
+
+    .chat-tools button {
+      height: 32px;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .chat-log {
+      margin: 0;
+      min-height: 420px;
+      max-height: calc(100vh - 360px);
+      padding: 22px;
+      border: 0;
+      border-radius: 0;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(139, 30, 30, 0.05), transparent 26%),
+        #fbfcfe;
+    }
+
+    .chat-msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 78%;
+      margin-bottom: 16px;
+    }
+
+    .chat-msg.user {
+      align-items: flex-end;
+      margin-left: auto;
+    }
+
+    .chat-msg.assistant {
+      align-items: flex-start;
+    }
+
+    .chat-msg .role {
+      margin: 0 10px 5px;
+    }
+
+    .chat-bubble {
+      padding: 12px 14px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      color: #344054;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+
+    .chat-msg.user .chat-bubble {
+      border-color: rgba(29, 78, 216, 0.12);
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #fff;
+    }
+
+    .chat-msg.assistant .chat-bubble {
+      border-color: rgba(139, 30, 30, 0.10);
+    }
+
+    .quick-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 18px 0;
+      background: #fff;
+    }
+
+    .quick-prompt {
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .chat-input-row {
+      padding: 16px 18px 18px;
+      background: #fff;
+      border-top: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .chat-input-row textarea {
+      min-height: 84px;
+      border-color: rgba(15, 23, 42, 0.12);
+      background: #f8fafc;
+      transition: border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+
+    .chat-input-row textarea:focus {
+      outline: none;
+      border-color: rgba(139, 30, 30, 0.42);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(139, 30, 30, 0.08);
+    }
+
+    .chat-input-row button {
+      height: 46px;
+      min-width: 96px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #8b1e1e, #b42318);
+      box-shadow: 0 10px 24px rgba(139, 30, 30, 0.22);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+    }
+
+    .chat-input-row button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(139, 30, 30, 0.28);
+    }
+
+    .debate-page {
+      display: grid;
+      gap: 18px;
+      padding-bottom: 32px;
+    }
+
+    .debate-setup {
+      padding: 18px 20px;
+    }
+
+    .debate-setup-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.7fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .debate-field {
+      display: grid;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .debate-field textarea,
+    .debate-field input,
+    .debate-field select {
+      width: 100%;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 12px;
+      background: #f8fafc;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .debate-field textarea {
+      min-height: 112px;
+      padding: 12px 14px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .debate-field input,
+    .debate-field select {
+      height: 40px;
+      padding: 0 11px;
+    }
+
+    .debate-options {
+      display: grid;
+      gap: 12px;
+    }
+
+    .debate-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      font-size: 12.5px;
+      color: #475467;
+    }
+
+    .debate-checks label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .debate-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .debate-run {
+      min-width: 150px;
+      height: 42px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #8b1e1e, #b42318);
+      box-shadow: 0 10px 24px rgba(139, 30, 30, 0.2);
+    }
+
+    .debate-run:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .debate-status {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .debate-status.running::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 7px;
+      border: 2px solid rgba(139, 30, 30, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: debate-spin 0.8s linear infinite;
+      vertical-align: -1px;
+    }
+
+    @keyframes debate-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .debate-experts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .debate-expert {
+      padding: 12px 13px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .debate-expert strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .debate-expert span {
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .debate-results {
+      display: none;
+      gap: 18px;
+    }
+
+    .debate-results.open {
+      display: grid;
+    }
+
+    .debate-turns {
+      display: grid;
+      gap: 12px;
+    }
+
+    .debate-round-title {
+      margin: 7px 0 0;
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+
+    .debate-turn {
+      padding: 15px 17px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-left: 4px solid #64748b;
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .debate-turn[data-expert="macro"] { border-left-color: #8b1e1e; }
+    .debate-turn[data-expert="technical"] { border-left-color: #2563eb; }
+    .debate-turn[data-expert="sentiment"] { border-left-color: #d97706; }
+    .debate-turn[data-expert="risk"] { border-left-color: #047857; }
+
+    .debate-turn-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .debate-turn-head strong {
+      font-size: 13.5px;
+    }
+
+    .debate-turn-meta {
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .debate-markdown {
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.75;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .debate-turn .debate-markdown h3 {
+      margin: 12px 0 4px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .debate-turn .debate-markdown h3:first-child {
+      margin-top: 0;
+    }
+
+    .debate-report {
+      padding: 22px 24px;
+      border-top: 4px solid var(--accent);
+      background:
+        radial-gradient(circle at 100% 0%, rgba(139, 30, 30, 0.07), transparent 28%),
+        #fff;
+    }
+
+    .debate-report-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .debate-report-head h2 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .debate-report-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .debate-report-actions button {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .debate-report .debate-markdown {
+      font-size: 13.5px;
+      line-height: 1.85;
+    }
+
+    .debate-report .debate-markdown h1,
+    .debate-report .debate-markdown h2,
+    .debate-report .debate-markdown h3 {
+      margin: 20px 0 8px;
+      color: var(--ink);
+      white-space: normal;
+    }
+
+    .debate-report .debate-markdown h1 { font-size: 20px; }
+    .debate-report .debate-markdown h2 { font-size: 16px; }
+    .debate-report .debate-markdown h3 { font-size: 14px; }
+
+    @media (max-width: 900px) {
+      .debate-setup-grid { grid-template-columns: 1fr; }
+      .debate-experts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .sheet-tabs {
+      height: 46px;
+      padding: 0 18px;
+      background: rgba(241, 245, 249, 0.92);
+      box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.08);
+      backdrop-filter: blur(16px);
+    }
+
+    .sheet-tab {
+      min-width: 150px;
+      padding: 10px 18px;
+      border-color: rgba(15, 23, 42, 0.14);
+      background: rgba(255, 255, 255, 0.58);
+      transition: transform 0.14s ease, background 0.14s ease, color 0.14s ease;
+    }
+
+    .sheet-tab:hover {
+      transform: translateY(-2px);
+      background: #fff;
+    }
+
+    .sheet-tab.active {
+      border-color: rgba(139, 30, 30, 0.24);
+      background: #fff;
+      color: #8b1e1e;
+      box-shadow: 0 -8px 24px rgba(139, 30, 30, 0.10);
+    }
+
+    .exposure-wrap {
+      display: grid;
+      gap: 16px;
+    }
+
+    .exposure-panel {
+      padding: 22px;
+      overflow-x: auto;
+    }
+
+    .exposure-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 18px;
+    }
+
+    table.exposure-table {
+      width: 100%;
+      min-width: 880px;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.14);
+      border-radius: 14px;
+      background: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .exposure-table th,
+    .exposure-table td {
+      padding: 11px 12px;
+      border-right: 1px solid rgba(15, 23, 42, 0.10);
+      border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .exposure-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .exposure-table th:first-child,
+    .exposure-table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      text-align: left;
+      background: #fff;
+      font-weight: 700;
+      color: #1f2933;
+      white-space: nowrap;
+    }
+
+    .exposure-table th:first-child {
+      z-index: 3;
+      background: #f8fafc;
+    }
+
+    .exposure-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .exposure-table th:last-child,
+    .exposure-table td:last-child {
+      border-right: 0;
+    }
+
+    .exposure-table th.r2-col,
+    .exposure-table td.r2-col {
+      min-width: 84px;
+      padding: 0;
+      background: #f8fbff;
+    }
+
+    .exposure-r2-cell {
+      position: relative;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 11px 12px;
+      overflow: hidden;
+    }
+
+    .exposure-r2-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.82) 0%, rgba(147, 197, 253, 0.35) 72%, rgba(255, 255, 255, 0) 100%);
+      pointer-events: none;
+    }
+
+    .exposure-r2-value {
+      position: relative;
+      z-index: 1;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .pair-drilldown {
+      display: none;
+      margin-top: 22px;
+      padding: 22px;
+    }
+
+    .pair-drilldown.open {
+      display: block;
+    }
+
+    .pair-drilldown-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .pair-drilldown-head h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+    }
+
+    .pair-drilldown-head .hint {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pair-drilldown-close {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .pair-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .pair-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 12px;
+      color: #334155;
+    }
+
+    .pair-chip strong {
+      font-variant-numeric: tabular-nums;
+      color: #0f172a;
+    }
+
+    .pair-diagnosis {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(139, 30, 30, 0.06);
+      border: 1px solid rgba(139, 30, 30, 0.12);
+      color: #3f2a2a;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .pair-charts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .pair-chart-card {
+      padding: 12px 12px 8px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .pair-chart-card h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .pair-chart-card .sub {
+      margin: 0 0 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .pair-chart-card svg {
+      width: 100%;
+      height: 210px;
+      display: block;
+    }
+
+    .pair-legend {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .pair-legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      margin-right: 4px;
+      vertical-align: -1px;
+    }
+
+    .heatmap td {
+      cursor: pointer;
+    }
+
+    .vol-monitor {
+      padding: 20px 22px 18px;
+      margin-bottom: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 252, 247, 0.96) 0%, rgba(255, 255, 255, 0.78) 100%);
+    }
+
+    .vol-monitor-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(31, 41, 51, 0.08);
+    }
+
+    .vol-monitor-head h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.03em;
+      color: #1f2933;
+    }
+
+    .vol-monitor-head .hint {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .vol-status-wrap {
+      text-align: right;
+      flex: 0 0 auto;
+    }
+
+    .vol-status {
+      display: inline-block;
+      min-width: 64px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+    }
+
+    .vol-status.ok {
+      color: #0f766e;
+      background: rgba(15, 118, 110, 0.08);
+      border-color: rgba(15, 118, 110, 0.18);
+    }
+
+    .vol-status.warn {
+      color: #9a3412;
+      background: rgba(194, 65, 12, 0.08);
+      border-color: rgba(194, 65, 12, 0.18);
+    }
+
+    .vol-status.bad {
+      color: #8b1e1e;
+      background: rgba(139, 30, 30, 0.08);
+      border-color: rgba(139, 30, 30, 0.2);
+    }
+
+    .vol-note {
+      margin: 0 0 16px;
+      padding: 10px 12px;
+      border-left: 3px solid rgba(139, 30, 30, 0.45);
+      background: rgba(139, 30, 30, 0.04);
+      font-size: 13px;
+      color: #3f2a2a;
+      line-height: 1.55;
+    }
+
+    .mp-page {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding-bottom: 28px;
+      max-width: 1180px;
+    }
+
+    .mp-note {
+      margin: 0;
+      padding: 10px 14px;
+      border-left: 3px solid var(--accent);
+      background: rgba(139, 30, 30, 0.05);
+      border-radius: 0 12px 12px 0;
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #3f2a2a;
+    }
+
+    .mp-toolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      margin: 0;
+      padding: 12px 16px;
+    }
+
+    .mp-toolbar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .mp-toolbar select {
+      min-width: 120px;
+    }
+
+    .mp-toolbar .range-status {
+      flex: 1 1 220px;
+      margin: 0;
+      min-width: 0;
+      line-height: 1.45;
+    }
+
+    .mp-section {
+      padding: 18px 20px 20px;
+    }
+
+    .mp-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(31, 41, 51, 0.08);
+    }
+
+    .mp-section-head h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .mp-section-hint {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .mp-metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mp-metric {
+      position: relative;
+      padding: 14px 12px 12px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,250,244,0.95), rgba(247,243,238,0.75));
+      border: 1px solid rgba(31, 41, 51, 0.07);
+      overflow: hidden;
+    }
+
+    .mp-metric::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      border-radius: 999px;
+      background: rgba(139, 30, 30, 0.45);
+    }
+
+    .mp-metric.accent {
+      background: linear-gradient(160deg, rgba(139, 30, 30, 0.1), rgba(255, 250, 244, 0.9));
+      border-color: rgba(139, 30, 30, 0.16);
+    }
+
+    .mp-metric.accent::before {
+      background: var(--accent);
+    }
+
+    .mp-metric .k {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin: 0 0 6px 6px;
+    }
+
+    .mp-metric .v {
+      margin-left: 6px;
+      font-size: 22px;
+      font-weight: 740;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+
+    .mp-hero-wrap:empty { display: none; }
+
+    .mp-hero {
+      margin: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(31, 41, 51, 0.08);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .mp-hero img {
+      display: block;
+      width: 100%;
+      height: auto;
+      cursor: zoom-in;
+      background: #f8fafc;
+    }
+
+    .mp-hero .cap {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 12px 16px 14px;
+      background: rgba(255, 250, 244, 0.85);
+      border-top: 1px solid rgba(31, 41, 51, 0.06);
+    }
+
+    .mp-hero .cap strong {
+      font-size: 14px;
+    }
+
+    .mp-hero .cap span {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .mp-grid-2 {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .mp-table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .mp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .mp-table th,
+    .mp-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(31, 41, 51, 0.07);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .mp-table th {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 650;
+      letter-spacing: 0.02em;
+      background: rgba(15, 23, 42, 0.02);
+    }
+
+    .mp-table tbody tr:hover td {
+      background: rgba(139, 30, 30, 0.03);
+    }
+
+    .mp-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mp-table tr.top td:first-child {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .mp-weight-bar {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(139, 30, 30, 0.1);
+      overflow: hidden;
+    }
+
+    .mp-weight-bar > i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #8b1e1e, #c45c3e);
+    }
+
+    .mp-feat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .mp-feat-row {
+      display: grid;
+      grid-template-columns: 22px 1fr 40px;
+      gap: 8px;
+      align-items: center;
+      font-size: 12.5px;
+    }
+
+    .mp-feat-row .idx {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-size: 11.5px;
+    }
+
+    .mp-feat-row .name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #334155;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mp-feat-bar {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(139, 30, 30, 0.1);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .mp-feat-bar > i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #8b1e1e, #d67a4a);
+      border-radius: inherit;
+    }
+
+    .mp-feat-row .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 650;
+      color: var(--ink);
+    }
+
+    .mp-figures {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .mp-fig {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(31, 41, 51, 0.08);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      min-width: 0;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .mp-fig:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(61, 47, 35, 0.1);
+    }
+
+    .mp-fig img {
+      display: block;
+      width: 100%;
+      height: 280px;
+      object-fit: contain;
+      object-position: center;
+      cursor: zoom-in;
+      background: #f8fafc;
+    }
+
+    .mp-fig .cap {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 11px 14px 13px;
+      font-size: 12.5px;
+      border-top: 1px solid rgba(31, 41, 51, 0.06);
+      background: rgba(255, 250, 244, 0.65);
+      margin-top: auto;
+    }
+
+    .mp-fig .cap strong {
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .mp-fig .cap span {
+      color: var(--muted);
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .mp-weights {
+      width: 100%;
+    }
+
+    .mp-table col.asset { width: 28%; }
+    .mp-table col.weight { width: 36%; }
+    .mp-table col.score { width: 18%; }
+    .mp-table col.mu { width: 18%; }
+
+    .mp-weight-cell {
+      display: grid;
+      grid-template-columns: 56px minmax(80px, 1fr);
+      gap: 10px;
+      align-items: center;
+      justify-items: stretch;
+    }
+
+    .mp-weight-cell > span {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 650;
+    }
+
+    .mp-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(31, 41, 51, 0.78);
+      padding: 24px;
+      backdrop-filter: blur(2px);
+    }
+
+    .mp-lightbox.open { display: flex; }
+
+    .mp-lightbox img {
+      max-width: min(1140px, 96vw);
+      max-height: 92vh;
+      border-radius: 12px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.4);
+      background: #fff;
+    }
+
+    @media (max-width: 900px) {
+      .mp-figures { grid-template-columns: 1fr; }
+      .mp-fig img { height: 240px; }
+      .mp-section-hint { white-space: normal; }
+      .mp-fig .cap {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .mp-fig .cap span { text-align: left; }
+    }
+
+    .vol-forecast {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) 180px;
+      gap: 14px;
+      align-items: center;
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(31, 41, 51, 0.08);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .vol-forecast .prob-box {
+      text-align: center;
+    }
+
+    .vol-forecast .prob {
+      font-size: 28px;
+      font-weight: 760;
+      letter-spacing: 0.02em;
+      color: #1f2933;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .vol-forecast .prob-label {
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .vol-forecast .forecast-body {
+      min-width: 0;
+    }
+
+    .vol-forecast .forecast-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .vol-forecast .forecast-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 12px;
+    }
+
+    .forecast-select-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .forecast-select-label select {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 8px;
+      padding: 4px 8px;
+      background: #fff;
+      font-size: 12.5px;
+      color: #0f172a;
+    }
+
+    .forecast-all {
+      display: block;
+      margin-top: 8px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .forecast-pill {
+      border: 1px solid rgba(31, 41, 51, 0.1);
+      background: rgba(248, 250, 252, 0.9);
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 11.5px;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .forecast-pill.active {
+      border-color: rgba(139, 30, 30, 0.35);
+      background: rgba(139, 30, 30, 0.08);
+      color: #8b1e1e;
+      font-weight: 650;
+    }
+
+    .forecast-pill.hot {
+      border-color: rgba(139, 30, 30, 0.25);
+    }
+
+    .vol-forecast .forecast-text {
+      margin-top: 4px;
+      font-size: 12.5px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .vol-forecast .forecast-meta {
+      margin-top: 6px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .vol-forecast .feat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+
+    .vol-forecast .feat-list span {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .vol-forecast.high {
+      border-color: rgba(139, 30, 30, 0.22);
+      background: rgba(139, 30, 30, 0.05);
+    }
+
+    .vol-forecast.high .prob { color: #8b1e1e; }
+
+    @media (max-width: 980px) {
+      .vol-forecast {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .vol-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.9fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .vol-col {
+      min-width: 0;
+      padding: 12px 12px 10px;
+      border: 1px solid rgba(31, 41, 51, 0.07);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .vol-col h3 {
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .vol-factor-list,
+    .vol-shock-list,
+    .vol-pressure-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .vol-row {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) 44px 40px;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 8px;
+      border-radius: 10px;
+      background: rgba(248, 250, 252, 0.7);
+      font-size: 12.5px;
+      color: #334155;
+    }
+
+    .vol-row.high {
+      background: rgba(139, 30, 30, 0.06);
+    }
+
+    .vol-row.mid {
+      background: rgba(194, 65, 12, 0.05);
+    }
+
+    .vol-row .name {
+      font-weight: 650;
+      color: #0f172a;
+    }
+
+    .vol-risk-track {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .vol-risk-components {
+      color: var(--muted);
+      font-size: 10.5px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .vol-bar {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .vol-bar > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: #8b1e1e;
+      opacity: 0.85;
+    }
+
+    .vol-row.mid .vol-bar > span { background: #c2410c; }
+    .vol-row.low .vol-bar > span { background: #0f766e; opacity: 0.7; }
+
+    .vol-row .pct {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      font-weight: 650;
+      color: #0f172a;
+    }
+
+    .vol-row .lvl {
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .vol-item {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(248, 250, 252, 0.75);
+      border: 1px solid transparent;
+      font-size: 12.5px;
+      color: #334155;
+    }
+
+    .vol-item .rank {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      background: rgba(15, 23, 42, 0.06);
+    }
+
+    .vol-item .main {
+      min-width: 0;
+    }
+
+    .vol-item .title {
+      font-weight: 650;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .vol-item .sub {
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .vol-item .metric {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: #1f2933;
+    }
+
+    .vol-item.shock {
+      background: rgba(139, 30, 30, 0.07);
+      border-color: rgba(139, 30, 30, 0.14);
+    }
+
+    .vol-item.shock .rank {
+      color: #8b1e1e;
+      background: rgba(139, 30, 30, 0.1);
+    }
+
+    .vol-empty {
+      color: var(--muted);
+      font-size: 12.5px;
+      padding: 14px 8px;
+      text-align: center;
+      border: 1px dashed rgba(31, 41, 51, 0.12);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    @media (max-width: 980px) {
+      .vol-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        width: min(100vw - 24px, 1380px);
+        margin: 16px auto;
+      }
+
+      .header,
+      .chat-header {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px;
+      }
+
+      .heatmap-panel,
+      .detail-panel {
+        padding: 14px;
+      }
+
+      .controls {
+        align-items: stretch;
+      }
+
+      .controls label,
+      .controls select,
+      .controls button,
+      .range-status {
+        width: 100%;
+      }
+
+      .range-status {
+        margin-left: 0;
+      }
+
+      .heatmap-panel {
+        overflow-x: auto;
+      }
+
+      table.heatmap {
+        min-width: 650px;
+      }
+
+      .chat-msg {
+        max-width: 94%;
+      }
+
+      .chat-input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chat-input-row button {
+        width: 100%;
+      }
+
+      .sheet-tab {
+        min-width: auto;
+        flex: 1;
+        padding-inline: 8px;
+      }
+    }
+
+    /* ===== 统一视觉系统（全站） ===== */
+    :root {
+      --bg: #f4f1ec;
+      --paper: #fffcf8;
+      --ink: #1d252d;
+      --muted: #6f747c;
+      --accent: #8f2d2d;
+      --accent-deep: #6f1f24;
+      --accent-soft: rgba(143, 45, 45, 0.08);
+      --gold: #b78a4a;
+      --surface: rgba(255, 255, 255, 0.88);
+      --surface-strong: #ffffff;
+      --surface-muted: #f8f5f1;
+      --line: rgba(51, 42, 35, 0.10);
+      --line-strong: rgba(51, 42, 35, 0.17);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-sm: 0 4px 14px rgba(67, 50, 37, 0.06);
+      --shadow: 0 16px 42px rgba(67, 50, 37, 0.09);
+      --shadow-lift: 0 22px 56px rgba(67, 50, 37, 0.13);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 8% 4%, rgba(179, 87, 66, 0.11), transparent 27%),
+        radial-gradient(circle at 92% 12%, rgba(183, 138, 74, 0.08), transparent 25%),
+        linear-gradient(145deg, #f8f3ed 0%, #f2f5f1 54%, #f7f1eb 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    ::selection {
+      color: #fff;
+      background: rgba(143, 45, 45, 0.82);
+    }
+
+    .shell {
+      padding-bottom: 72px;
+    }
+
+    .page {
+      width: min(1420px, calc(100vw - 56px));
+      margin: 28px auto 36px;
+    }
+
+    .header,
+    .chat-header {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      margin: 0 0 20px;
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(112deg, rgba(255,255,255,0.96), rgba(255,250,245,0.85));
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(16px);
+    }
+
+    .header::before,
+    .chat-header::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--accent), #c47755);
+    }
+
+    .header::after,
+    .chat-header::after {
+      content: "";
+      position: absolute;
+      width: 190px;
+      height: 190px;
+      right: -80px;
+      top: -110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(143,45,45,0.08), transparent 68%);
+      pointer-events: none;
+    }
+
+    h1,
+    .chat-header h1 {
+      color: #20262d;
+      font-size: clamp(23px, 2vw, 30px);
+      font-weight: 760;
+      line-height: 1.18;
+      letter-spacing: 0.025em;
+    }
+
+    .subtitle {
+      max-width: 980px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .badge,
+    .chat-status {
+      position: relative;
+      z-index: 1;
+      padding: 8px 13px;
+      border: 1px solid rgba(143,45,45,0.13);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.82);
+      color: #684244;
+      box-shadow: 0 4px 14px rgba(67,50,37,0.05);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .heatmap-panel,
+    .exposure-panel,
+    .vol-monitor,
+    .pair-drilldown,
+    .chat-panel,
+    .debate-setup,
+    .debate-turns,
+    .debate-report {
+      border-color: var(--line);
+    }
+
+    .matrix-title,
+    .vol-monitor-head,
+    .pair-drilldown-head,
+    .mp-section-head {
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .matrix-title strong,
+    .vol-monitor-head h2,
+    .pair-drilldown-head h2,
+    .mp-section-head h3 {
+      color: #262b31;
+      font-weight: 730;
+      letter-spacing: 0.01em;
+    }
+
+    .controls,
+    .chat-tools,
+    .mp-toolbar {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(250, 248, 245, 0.88);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+    }
+
+    .controls select,
+    .controls button,
+    .chat-tools select,
+    .chat-tools button,
+    .debate-field input,
+    .debate-field select,
+    .debate-field textarea,
+    .forecast-select-label select,
+    .chat-input-row textarea {
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.94);
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(67,50,37,0.03);
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .controls select:focus,
+    .controls button:focus-visible,
+    .chat-tools select:focus,
+    .chat-tools button:focus-visible,
+    .debate-field input:focus,
+    .debate-field select:focus,
+    .debate-field textarea:focus,
+    .forecast-select-label select:focus,
+    .chat-input-row textarea:focus {
+      outline: none;
+      border-color: rgba(143,45,45,0.58);
+      box-shadow: 0 0 0 3px rgba(143,45,45,0.10);
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .controls button,
+    .chat-tools button,
+    .quick-prompt,
+    .pair-drilldown-close,
+    .debate-report-actions button {
+      cursor: pointer;
+      color: #5e3437;
+      border-color: rgba(143,45,45,0.15);
+      background: #fff;
+      transition: transform 0.16s ease, color 0.16s ease,
+        border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .controls button:hover,
+    .chat-tools button:hover,
+    .quick-prompt:hover,
+    .pair-drilldown-close:hover,
+    .debate-report-actions button:hover {
+      transform: translateY(-1px);
+      color: var(--accent-deep);
+      border-color: rgba(143,45,45,0.32);
+      background: #fffaf7;
+      box-shadow: 0 5px 14px rgba(143,45,45,0.08);
+    }
+
+    .chat-input-row button,
+    .debate-run {
+      border: 0;
+      border-radius: 12px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent-deep), #a84539);
+      box-shadow: 0 9px 20px rgba(111,31,36,0.20);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    .chat-input-row button:hover,
+    .debate-run:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.05);
+      box-shadow: 0 12px 26px rgba(111,31,36,0.25);
+    }
+
+    .note,
+    .vol-note,
+    .mp-note,
+    .pair-diagnosis {
+      border: 1px solid rgba(143,45,45,0.08);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 12px 12px 0;
+      background: linear-gradient(90deg, rgba(143,45,45,0.07), rgba(255,255,255,0.45));
+      color: #514348;
+      line-height: 1.65;
+    }
+
+    .chip,
+    .pair-chip,
+    .forecast-pill,
+    .corr-pill,
+    .inline-badge {
+      border-color: rgba(143,45,45,0.12);
+      background: rgba(255,250,247,0.9);
+      color: #6f4042;
+      box-shadow: none;
+    }
+
+    .vol-col,
+    .pair-chart-card,
+    .debate-expert,
+    .debate-turn {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.72);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .vol-item {
+      border-color: rgba(51,42,35,0.07);
+      background: rgba(250,248,245,0.72);
+    }
+
+    .vol-item:hover {
+      border-color: rgba(143,45,45,0.14);
+      background: #fffaf7;
+    }
+
+    .chat-panel {
+      overflow: hidden;
+    }
+
+    .chat-log {
+      background:
+        linear-gradient(rgba(255,255,255,0.62), rgba(255,255,255,0.62)),
+        radial-gradient(circle at 15% 10%, rgba(143,45,45,0.06), transparent 34%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+    }
+
+    .chat-msg.assistant .chat-bubble {
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chat-msg.user .chat-bubble {
+      border: 1px solid rgba(143,45,45,0.12);
+      background: linear-gradient(135deg, #f9e9e4, #f7f0eb);
+    }
+
+    .mp-page {
+      max-width: none;
+    }
+
+    .mp-fig,
+    .mp-table-scroll {
+      border-color: var(--line);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mp-table th,
+    .exposure-table th {
+      color: #615d5a;
+      background: #f6f3ef;
+    }
+
+    .mp-table tbody tr:hover td,
+    .exposure-table tbody tr:hover td {
+      background: rgba(143,45,45,0.035);
+    }
+
+    table.heatmap {
+      overflow: hidden;
+      border: 1px solid rgba(45,39,35,0.28);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .heatmap th,
+    .heatmap td {
+      border-color: rgba(45,39,35,0.22);
+    }
+
+    .heatmap td {
+      transition: transform 0.14s ease, filter 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .heatmap td:not(.diag):hover {
+      position: relative;
+      z-index: 2;
+      transform: scale(1.025);
+      filter: saturate(1.08);
+      box-shadow: 0 7px 18px rgba(31,37,43,0.14);
+    }
+
+    .sheet-tabs {
+      left: 50%;
+      right: auto;
+      bottom: 12px;
+      width: min(760px, calc(100vw - 28px));
+      height: 50px;
+      transform: translateX(-50%);
+      padding: 5px;
+      gap: 4px;
+      border: 1px solid rgba(51,42,35,0.12);
+      border-radius: 16px;
+      background: rgba(255,252,248,0.88);
+      box-shadow: 0 14px 38px rgba(51,42,35,0.16);
+      backdrop-filter: blur(20px);
+    }
+
+    .sheet-tab {
+      min-width: 0;
+      flex: 1 1 0;
+      height: 38px;
+      border: 0;
+      border-radius: 11px;
+      background: transparent;
+      color: #69645f;
+      font-weight: 620;
+      transition: color 0.16s ease, background 0.16s ease,
+        box-shadow 0.16s ease, transform 0.16s ease;
+    }
+
+    .sheet-tab:hover {
+      color: var(--accent-deep);
+      background: rgba(143,45,45,0.055);
+      transform: translateY(-1px);
+    }
+
+    .sheet-tab.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent-deep), #a84539);
+      box-shadow: 0 7px 16px rgba(111,31,36,0.22);
+    }
+
+    @media (max-width: 1100px) {
+      .debate-experts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .pair-charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        padding-bottom: 78px;
+      }
+
+      .page {
+        width: calc(100vw - 24px);
+        margin: 14px auto 26px;
+      }
+
+      .header,
+      .chat-header {
+        gap: 14px;
+        padding: 17px 18px;
+        border-radius: 16px;
+      }
+
+      .header::after,
+      .chat-header::after {
+        display: none;
+      }
+
+      .badge,
+      .chat-status {
+        max-width: 100%;
+        white-space: normal;
+      }
+
+      .panel {
+        border-radius: 16px;
+      }
+
+      .heatmap-panel,
+      .exposure-panel,
+      .vol-monitor,
+      .pair-drilldown,
+      .chat-panel,
+      .debate-setup,
+      .debate-turns,
+      .debate-report,
+      .mp-section {
+        padding: 14px;
+      }
+
+      .matrix-title,
+      .vol-monitor-head,
+      .pair-drilldown-head,
+      .mp-section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .debate-experts {
+        grid-template-columns: 1fr;
+      }
+
+      .sheet-tabs {
+        bottom: 8px;
+        width: calc(100vw - 16px);
+        height: 54px;
+        border-radius: 15px;
+      }
+
+      .sheet-tab {
+        height: 42px;
+        padding-inline: 4px;
+        font-size: 11px;
+        line-height: 1.15;
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="workbook shell">
+  <main class="page sheet-panel active" id="sheet1" data-sheet="sheet1">
+    <header class="header">
+      <div>
+        <h1>宏观因子相关性对比矩阵</h1>
+        <div class="subtitle">左侧月频偏配置叙事（增长/通胀多为同比类，利率/信用/汇率/地缘为水平）；右侧周频热力图同口径。暴露与波动监控另用周度环比/变化。点击非对角格子可拆解高低频差异。</div>
+      </div>
+    </header>
+
+    <section class="panel vol-monitor" id="volMonitor">
+      <div class="vol-monitor-head">
+        <div>
+          <h2>周频波动警报</h2>
+          <div class="hint" id="volMonitorHint">基于与暴露一致的周度 MoM：13 周波动分位 + 本周 2σ 冲击</div>
+        </div>
+        <div class="vol-status-wrap">
+          <span class="vol-status" id="volStatus">加载中</span>
+        </div>
+      </div>
+      <p class="vol-note" id="volNote">加载波动监控...</p>
+      <div class="vol-forecast" id="volForecast">
+        <div class="prob-box">
+          <div class="prob" id="volForecastProb">—</div>
+          <div class="prob-label">波动风险评分</div>
+        </div>
+        <div class="forecast-body">
+          <div class="forecast-title-row">
+            <div class="forecast-title" id="volForecastTitle">当前分位 + 前瞻概率</div>
+            <label class="forecast-select-label">查看因子
+              <select id="volForecastFactor"></select>
+            </label>
+          </div>
+          <div class="forecast-text" id="volForecastText">加载中...</div>
+          <div class="forecast-meta" id="volForecastMeta"></div>
+          <div class="forecast-all" id="volForecastAll"></div>
+        </div>
+        <div class="feat-list" id="volForecastFeats"></div>
+      </div>
+      <div class="vol-grid">
+        <div class="vol-col">
+          <h3>因子波动风险</h3>
+          <div class="vol-factor-list" id="volFactorList"></div>
+        </div>
+        <div class="vol-col">
+          <h3>本周冲击</h3>
+          <div id="volShockList" class="vol-shock-list"></div>
+        </div>
+        <div class="vol-col">
+          <h3>暴露压力 Top</h3>
+          <div id="volPressureList" class="vol-pressure-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="matrix-compare">
+      <div class="panel heatmap-panel">
+        <div class="matrix-title">
+          <strong>月频低频矩阵</strong>
+          <span class="badge inline-badge" id="sampleBadge">月频样本：加载中...</span>
+        </div>
+        <div class="controls">
+          <label>开始
+            <select id="startMonth"></select>
+          </label>
+          <label>结束
+            <select id="endMonth"></select>
+          </label>
+          <button type="button" data-preset="all">全部</button>
+          <button type="button" data-preset="3y">近3年</button>
+          <button type="button" data-preset="2y">近2年</button>
+          <button type="button" data-preset="1y">近1年</button>
+          <span class="range-status" id="rangeStatus">加载数据中...</span>
+        </div>
+        <table class="heatmap" id="heatmap" aria-label="宏观因子相关性热力矩阵"></table>
+        <div class="legend">
+          <span>负相关</span>
+          <div class="legend-bar"></div>
+          <span>正相关</span>
+        </div>
+      </div>
+
+      <div class="panel heatmap-panel">
+        <div class="matrix-title">
+          <strong>周频高频矩阵</strong>
+          <span class="badge inline-badge" id="sampleBadgeHf">周频样本：加载中...</span>
+        </div>
+        <div class="controls">
+          <label>开始
+            <select id="startWeek"></select>
+          </label>
+          <label>结束
+            <select id="endWeek"></select>
+          </label>
+          <button type="button" data-hf-preset="all">全部</button>
+          <button type="button" data-hf-preset="3y">近3年</button>
+          <button type="button" data-hf-preset="2y">近2年</button>
+          <button type="button" data-hf-preset="1y">近1年</button>
+          <span class="range-status" id="rangeStatusHf">加载数据中...</span>
+        </div>
+        <table class="heatmap" id="heatmapHf" aria-label="高频拟合宏观因子周频相关性热力矩阵"></table>
+        <div class="legend">
+          <span>负相关</span>
+          <div class="legend-bar"></div>
+          <span>正相关</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel pair-drilldown" id="pairDrilldown" aria-live="polite">
+      <div class="pair-drilldown-head">
+        <div>
+          <h2 id="pairTitle">高低频差异拆解</h2>
+          <div class="hint" id="pairHint">点击矩阵中任意非对角格子，对比该因子对在月频与周频上的走势与相关。</div>
+        </div>
+        <button type="button" class="pair-drilldown-close" id="pairCloseBtn">关闭</button>
+      </div>
+      <div class="pair-chips" id="pairChips"></div>
+      <p class="pair-diagnosis" id="pairDiagnosis"></p>
+      <div class="pair-charts">
+        <div class="pair-chart-card">
+          <h3>月频序列（窗口内标准化）</h3>
+          <p class="sub">低频矩阵：增长/通胀为同比类，利率/信用/汇率/地缘为水平</p>
+          <div id="chartLfSeries"></div>
+          <div class="pair-legend" id="legendLf"></div>
+        </div>
+        <div class="pair-chart-card">
+          <h3>周频序列（窗口内标准化）</h3>
+          <p class="sub">高频矩阵：增长/通胀为同比，利率/信用/汇率/地缘为周末水平</p>
+          <div id="chartHfSeries"></div>
+          <div class="pair-legend" id="legendHf"></div>
+        </div>
+        <div class="pair-chart-card">
+          <h3>滚动相关</h3>
+          <p class="sub">月频 12 个月窗 · 周频 52 周窗</p>
+          <div id="chartRolling"></div>
+          <div class="pair-legend">
+            <span><i style="background:#8b1e1e"></i>月频滚动相关</span>
+            <span><i style="background:#2563eb"></i>周频滚动相关</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main class="page sheet-panel" id="sheet2" data-sheet="sheet2">
+    <header class="header">
+      <div>
+        <h1>资产宏观因子暴露矩阵</h1>
+        <div class="subtitle" id="exposureSubtitle">Y 为大类资产周度对数收益率，X 为宏观高频因子周度环比/变化；滚动窗口以最新计算结果为准（Bootstrap + Lasso）</div>
+      </div>
+      <div class="badge" id="exposureBadge">暴露窗口：加载中...</div>
+    </header>
+
+    <section class="exposure-wrap">
+      <div class="panel exposure-panel">
+        <div class="matrix-title">
+          <strong>资产 × 宏观因子暴露</strong>
+          <span class="hint">非债券资产信用因子暴露按先验约束置为 0</span>
+        </div>
+        <div class="controls">
+          <label>滚动窗口
+            <select id="exposureRollingWeeks">
+              <option value="104">2年（104周）</option>
+              <option value="156">3年（156周）</option>
+              <option value="260">5年（260周）</option>
+              <option id="exposureFullSampleOption" value="315">全样本（按最新数据）</option>
+            </select>
+          </label>
+          <label>结束周
+            <select id="exposureEndWeek"></select>
+          </label>
+          <span class="range-status" id="exposureStatus">加载中...</span>
+        </div>
+        <div class="exposure-meta" id="exposureMeta">
+          <span class="chip">加载中...</span>
+        </div>
+        <table class="exposure-table" id="exposureTable" aria-label="资产宏观因子暴露矩阵"></table>
+        <div class="note">
+          说明：表格数值为标准化 Lasso 回归系数，中位数来自滚动窗口内连续周频区间 Bootstrap。R方 为同窗口内中位系数对资产周度收益的解释度（in-sample）。正值代表资产周度收益与该宏观高频因子同向，负值代表反向，接近 0 表示该因子暴露被 Lasso 压缩或影响较弱。
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main class="page sheet-panel" id="sheet3" data-sheet="sheet3">
+    <div class="chat-wrap">
+      <div class="chat-header">
+        <div>
+          <h1>AI 宏观助手</h1>
+          <div class="subtitle">本地 Qwen · 注入当前矩阵/暴露 · 文档检索 · 工具查 corr/exposure</div>
+        </div>
+        <div class="chat-status" id="ollamaStatus">检测 Ollama 连接中...</div>
+      </div>
+      <section class="panel chat-panel">
+        <div class="chat-tools">
+          <label>模型
+            <select id="modelSelect"></select>
+          </label>
+          <button type="button" id="clearChatBtn">清空对话</button>
+        </div>
+        <div class="quick-prompts" aria-label="快捷问题">
+          <button type="button" class="quick-prompt">解释当前最强的相关性</button>
+          <button type="button" class="quick-prompt">查一下最新因子暴露矩阵</button>
+          <button type="button" class="quick-prompt">地缘因子是怎么构造的？</button>
+          <button type="button" class="quick-prompt">为什么相关性不能当交易信号？</button>
+        </div>
+        <div class="chat-log" id="chatLog">
+          <div class="chat-msg assistant">
+            <div class="role">助手</div>
+            <div class="chat-bubble">你好，我是宏观量化助手。每次提问会自动带上当前相关矩阵与暴露摘要，并检索 README/JSON；需要精确数字时会调用 corr / exposure 工具。</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="例如：通胀因子和汇率因子正相关时，组合该怎么对冲？"></textarea>
+          <button type="button" id="sendChatBtn">发送</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <main class="page sheet-panel" id="sheet4" data-sheet="sheet4">
+    <header class="header">
+      <div>
+        <h1>模型预测 · 大类配置</h1>
+        <div class="subtitle">LightGBM 截面排序 + Black-Litterman · Walk-forward 回测（model prediction）</div>
+      </div>
+      <div class="badge" id="mpBadge">加载中...</div>
+    </header>
+
+    <div class="mp-page">
+      <p class="mp-note" id="mpNote">加载 model prediction 结果...</p>
+
+      <div class="panel mp-toolbar controls">
+        <label>激进程度
+          <select id="mpAggression">
+            <option value="conservative">稳健</option>
+            <option value="balanced" selected>均衡</option>
+            <option value="aggressive">进取</option>
+          </select>
+        </label>
+        <span class="range-status" id="mpAggressionHint">档位只改组合上限与风险厌恶，不改预测信号</span>
+      </div>
+
+      <section class="panel mp-section">
+        <div class="mp-section-head">
+          <h3>滚动回测</h3>
+          <span class="mp-section-hint">净值 · 回撤 · 点击放大</span>
+        </div>
+        <div class="mp-figures" id="mpFigures"></div>
+      </section>
+
+      <section class="panel mp-section mp-weights">
+        <div class="mp-section-head">
+          <h3>最新配置权重</h3>
+          <span class="mp-section-hint" id="mpWeightAsOf">Black-Litterman</span>
+        </div>
+        <div class="mp-table-scroll">
+          <table class="mp-table" id="mpWeightsTable" aria-label="最新 BL 权重"></table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <main class="page sheet-panel" id="sheet5" data-sheet="sheet5">
+    <header class="header">
+      <div>
+        <h1>多 Agent 宏观辩论</h1>
+        <div class="subtitle">4 位专家多轮讨论 · RAG / 数据工具 · 总协调人生成投研报告</div>
+      </div>
+      <div class="badge" id="debateBadge">Ollama · qwen2.5:7b</div>
+    </header>
+
+    <div class="debate-page">
+      <section class="panel debate-setup">
+        <div class="debate-setup-grid">
+          <label class="debate-field">
+            辩论议题
+            <textarea id="debateTopic" placeholder="例如：当前增长、通胀与流动性组合下，应如何制定未来一个月的大类资产配置与对冲框架？"></textarea>
+          </label>
+          <div class="debate-options">
+            <label class="debate-field">
+              关注资产（可选）
+              <input id="debateAssets" type="text" placeholder="沪深300、中债国债、沪金">
+            </label>
+            <label class="debate-field">
+              辩论轮数
+              <select id="debateRounds">
+                <option value="1">1 轮（较快）</option>
+                <option value="2" selected>2 轮（推荐）</option>
+                <option value="3">3 轮（较慢）</option>
+              </select>
+            </label>
+            <div class="debate-checks">
+              <label><input id="debateRag" type="checkbox" checked> RAG</label>
+              <label><input id="debateTools" type="checkbox" checked> 数据工具</label>
+              <label><input id="debateContext" type="checkbox" checked> 实时摘要</label>
+            </div>
+          </div>
+        </div>
+        <div class="debate-actions">
+          <button class="debate-run" type="button" id="runDebateBtn">开始辩论</button>
+          <span class="debate-status" id="debateStatus">默认 2 轮约需数分钟，请保持页面开启。</span>
+        </div>
+      </section>
+
+      <div class="debate-experts" aria-label="专家角色">
+        <div class="debate-expert"><strong>宏观基本面</strong><span>增长、通胀、利率、信用、流动性</span></div>
+        <div class="debate-expert"><strong>技术量价</strong><span>动量、趋势、波动、样本外指标</span></div>
+        <div class="debate-expert"><strong>情绪风险</strong><span>地缘、美元、黄金原油、尾部情景</span></div>
+        <div class="debate-expert"><strong>风控对冲</strong><span>暴露、风险预算、压力测试、对冲</span></div>
+      </div>
+
+      <div class="debate-results" id="debateResults">
+        <section class="panel mp-section">
+          <div class="mp-section-head">
+            <h3>专家辩论记录</h3>
+            <span class="mp-section-hint" id="debateTraceMeta"></span>
+          </div>
+          <div class="debate-turns" id="debateTurns"></div>
+        </section>
+
+        <section class="panel debate-report">
+          <div class="debate-report-head">
+            <h2>大类资产配置策略报告</h2>
+            <div class="debate-report-actions">
+              <span class="mp-section-hint" id="debateReportMeta"></span>
+              <button type="button" id="copyDebateReport">复制报告</button>
+              <button type="button" id="downloadDebateReport">下载 Markdown</button>
+            </div>
+          </div>
+          <div class="debate-markdown" id="debateReport"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <nav class="sheet-tabs" aria-label="工作表切换">
+    <button type="button" class="sheet-tab active" data-target="sheet1">因子矩阵</button>
+    <button type="button" class="sheet-tab" data-target="sheet2">因子暴露</button>
+    <button type="button" class="sheet-tab" data-target="sheet4">模型预测</button>
+    <button type="button" class="sheet-tab" data-target="sheet5">Agent辩论</button>
+    <button type="button" class="sheet-tab" data-target="sheet3">AI助手</button>
+  </nav>
+  </div>
+
+  <div class="mp-lightbox" id="mpLightbox" role="dialog" aria-modal="true">
+    <img id="mpLightboxImg" alt="放大预览">
+  </div>
+
+  <script>
+    const labels = ["增长因子", "通胀因子", "利率因子", "信用因子", "汇率因子", "地缘因子"];
+    let corr = [];
+    let availableMonths = [];
+    let hfCorr = [];
+    let availableWeeks = [];
+    let selectedCell = [1, 4];
+    let selectedCellHf = [1, 4];
+
+    const factorNotes = {
+      "增长因子": "低频/热力图为宏观同比类合成；暴露与波动监控用高频环比（hf_mom_pct）。",
+      "通胀因子": "低频/热力图为 CPI/PPI 同比合成；暴露与波动监控用高频周环比（hf_wow）。",
+      "利率因子": "低频为十年国债收益率绝对水平（%）；高频热力图为中债国债净价指数相反数（水平）；暴露用日环比周求和。",
+      "信用因子": "低频/热力图为 AA中票−国开利差或财富差去趋势后的水平；暴露用高频指数环比（hf_mom_pct）。",
+      "汇率因子": "由美元指数 DXY 绝对水平构造（热力图）；暴露用周对数收益。",
+      "地缘因子": "沪金+布伦特绝对价格拟合的合成因子水平（热力图）；暴露用周对数收益。",
+      "流动性因子": "低频为 M2 同比减社融存量同比；仅进入暴露（hf_mom_pct），不进相关热力图。",
+    };
+
+    const pairNotes = {
+      "通胀因子|汇率因子": {
+        investment: "这是当前样本中最强的正相关组合之一。通胀上行阶段常伴随美元走强或外部定价压力增强，商品、汇率和进口价格链条可能同步影响组合。",
+        hedge: "如果组合同时暴露在通胀和美元风险上，需要避免把二者误认为独立风险源。可用外汇敞口、商品敞口或利率仓位做统一风险预算。"
+      },
+      "通胀因子|信用因子": {
+        investment: "明显负相关，说明通胀压力上行时，信用因子在历史上往往反向变化。它们可能在组合层面提供一定分散。",
+        hedge: "信用资产可在部分通胀情景下提供对冲，但若进入滞胀或信用收缩，相关性可能快速失效，需要叠加利差水平和违约风险判断。"
+      },
+      "通胀因子|利率因子": {
+        investment: "中等正相关，符合通胀抬升带动利率压力上行的宏观逻辑。通胀与久期风险容易在债券组合里同向累积。",
+        hedge: "久期资产面对通胀和利率共振时防御性较弱，可考虑降低久期、加入通胀相关资产或配置收益率上行受益头寸。"
+      },
+      "增长因子|利率因子": {
+        investment: "中等正相关，增长改善往往伴随利率上行。权益和债券可能在增长修复阶段呈现不同收益来源。",
+        hedge: "如果持有增长敏感资产，同时持有长久期债券，需关注增长改善带来的利率上行对冲抵消。"
+      },
+      "汇率因子|地缘因子": {
+        investment: "弱到中等正相关，地缘风险上行时美元指数也可能走强，体现避险美元特征。",
+        hedge: "美元敞口可作为部分地缘冲击的对冲工具，但并非稳定一一对应，需要结合冲击来源和地区暴露。"
+      },
+      "汇率因子|流动性因子": {
+        investment: "美元走强与狭义流动性偏紧有时同步出现，但驱动机制不同。",
+        hedge: "需区分汇率冲击与流动性冲击；可用美元资产、短久期债券等组合应对，不宜视为单一对冲。"
+      },
+      "信用因子|汇率因子": {
+        investment: "弱负相关，美元走强时信用因子历史上偏弱，可能反映外部金融条件收紧对信用风险的影响。",
+        hedge: "信用多头组合需关注美元上行环境。若信用敞口较重，可用美元、利率或避险资产控制尾部风险。"
+      }
+    };
+
+    function pairKey(a, b) {
+      return [a, b].sort().join("|");
+    }
+
+    function updateRangeStatus(nMonths, start, end) {
+      const status = document.getElementById("rangeStatus");
+      const badge = document.getElementById("sampleBadge");
+      const label = `月频样本：${start} ~ ${end}（${nMonths}个月）`;
+      status.textContent = nMonths >= 12 ? label : `${label}，样本偏短`;
+      badge.textContent = label;
+    }
+
+    async function fetchCorr(start, end) {
+      const params = new URLSearchParams({ start, end });
+      const response = await fetch(`/api/corr?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "相关性计算失败");
+      }
+      return data;
+    }
+
+    async function applyRange() {
+      const start = document.getElementById("startMonth").value;
+      const end = document.getElementById("endMonth").value;
+      const status = document.getElementById("rangeStatus");
+      if (!start || !end) return;
+      if (start > end) {
+        status.textContent = "开始月份不能晚于结束月份";
+        return;
+      }
+
+      status.textContent = "计算中...";
+      try {
+        const data = await fetchCorr(start, end);
+        corr = data.corr;
+        updateRangeStatus(data.n_months, data.start, data.end);
+        buildHeatmap();
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    }
+
+    function setPreset(preset) {
+      if (!availableMonths.length) return;
+      const endIndex = availableMonths.length - 1;
+      let startIndex = 0;
+      if (preset === "3y") startIndex = Math.max(0, endIndex - 35);
+      if (preset === "2y") startIndex = Math.max(0, endIndex - 23);
+      if (preset === "1y") startIndex = Math.max(0, endIndex - 11);
+      document.getElementById("startMonth").value = availableMonths[startIndex];
+      document.getElementById("endMonth").value = availableMonths[endIndex];
+      applyRange();
+    }
+
+    async function initRangeControls() {
+      const status = document.getElementById("rangeStatus");
+      status.textContent = "加载数据中...";
+
+      try {
+        const response = await fetch("/macro_factor_corr.json", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "无法读取 macro_factor_corr.json");
+        }
+
+        availableMonths = data.months || [];
+        corr = data.corr || [];
+        const startSelect = document.getElementById("startMonth");
+        const endSelect = document.getElementById("endMonth");
+        startSelect.innerHTML = "";
+        endSelect.innerHTML = "";
+        availableMonths.forEach(month => {
+          startSelect.add(new Option(month, month));
+          endSelect.add(new Option(month, month));
+        });
+
+        const defaultStart = data.default_start || data.start || availableMonths[0];
+        const defaultEnd = data.default_end || data.end || availableMonths[availableMonths.length - 1];
+        startSelect.value = defaultStart;
+        endSelect.value = defaultEnd;
+        startSelect.addEventListener("change", applyRange);
+        endSelect.addEventListener("change", applyRange);
+        document.querySelectorAll("[data-preset]").forEach(button => {
+          button.addEventListener("click", () => setPreset(button.dataset.preset));
+        });
+
+        await applyRange();
+      } catch (error) {
+        status.textContent = `${error.message}。请先运行 python plot_macro_factor_corr.py`;
+      }
+    }
+
+    function updateRangeStatusHf(nWeeks, start, end) {
+      const status = document.getElementById("rangeStatusHf");
+      const badge = document.getElementById("sampleBadgeHf");
+      const label = `周频样本：${start} ~ ${end}（${nWeeks}周）`;
+      status.textContent = nWeeks >= 52 ? label : `${label}，样本偏短`;
+      badge.textContent = label;
+    }
+
+    async function fetchHfCorr(start, end) {
+      const params = new URLSearchParams({ start, end });
+      const response = await fetch(`/api/hf-corr?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "高频相关性计算失败");
+      }
+      return data;
+    }
+
+    async function applyRangeHf() {
+      const start = document.getElementById("startWeek").value;
+      const end = document.getElementById("endWeek").value;
+      const status = document.getElementById("rangeStatusHf");
+      if (!start || !end) return;
+      if (start > end) {
+        status.textContent = "开始周不能晚于结束周";
+        return;
+      }
+
+      status.textContent = "计算中...";
+      try {
+        const data = await fetchHfCorr(start, end);
+        hfCorr = data.corr;
+        updateRangeStatusHf(data.n_weeks || data.n_periods, data.start, data.end);
+        buildHeatmapHf();
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    }
+
+    function setPresetHf(preset) {
+      if (!availableWeeks.length) return;
+      const endIndex = availableWeeks.length - 1;
+      let startIndex = 0;
+      if (preset === "3y") startIndex = Math.max(0, endIndex - 156);
+      if (preset === "2y") startIndex = Math.max(0, endIndex - 104);
+      if (preset === "1y") startIndex = Math.max(0, endIndex - 52);
+      document.getElementById("startWeek").value = availableWeeks[startIndex];
+      document.getElementById("endWeek").value = availableWeeks[endIndex];
+      applyRangeHf();
+    }
+
+    async function initRangeControlsHf() {
+      const status = document.getElementById("rangeStatusHf");
+      status.textContent = "加载数据中...";
+
+      try {
+        const response = await fetch("/macro_hf_factor_corr.json", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "无法读取 macro_hf_factor_corr.json");
+        }
+
+        availableWeeks = data.weeks || data.periods || [];
+        hfCorr = data.corr || [];
+        const startSelect = document.getElementById("startWeek");
+        const endSelect = document.getElementById("endWeek");
+        startSelect.innerHTML = "";
+        endSelect.innerHTML = "";
+        availableWeeks.forEach(week => {
+          startSelect.add(new Option(week, week));
+          endSelect.add(new Option(week, week));
+        });
+
+        const defaultStart = data.default_start || data.start || availableWeeks[0];
+        const defaultEnd = data.default_end || data.end || availableWeeks[availableWeeks.length - 1];
+        startSelect.value = defaultStart;
+        endSelect.value = defaultEnd;
+        startSelect.addEventListener("change", applyRangeHf);
+        endSelect.addEventListener("change", applyRangeHf);
+        document.querySelectorAll("[data-hf-preset]").forEach(button => {
+          button.addEventListener("click", () => setPresetHf(button.dataset.hfPreset));
+        });
+
+        await applyRangeHf();
+      } catch (error) {
+        status.textContent = `${error.message}。请先运行 python plot_macro_hf_corr.py`;
+      }
+    }
+
+    function colorFor(value, diagonal) {
+      if (diagonal) return "#e53935";
+      if (!Number.isFinite(value)) return "#f3f4f6";
+      const v = Math.max(-1, Math.min(1, value));
+      if (v > 0) {
+        const t = v;
+        return `rgb(255, ${Math.round(255 - 140 * t)}, ${Math.round(255 - 140 * t)})`;
+      }
+      if (v < 0) {
+        const t = Math.abs(v);
+        return `rgb(${Math.round(255 - 140 * t)}, 255, ${Math.round(255 - 115 * t)})`;
+      }
+      return "#ffffff";
+    }
+
+    function strength(value) {
+      if (!Number.isFinite(value)) return "样本不足";
+      const a = Math.abs(value);
+      if (a >= 0.45) return "较强";
+      if (a >= 0.25) return "中等";
+      if (a >= 0.10) return "偏弱";
+      return "很弱";
+    }
+
+    function direction(value) {
+      if (!Number.isFinite(value)) return "样本不足";
+      if (value > 0.05) return "正相关";
+      if (value < -0.05) return "负相关";
+      return "接近无相关";
+    }
+
+    function formatCorr(value) {
+      if (!Number.isFinite(value)) return "—";
+      const rounded = Math.abs(value) < 0.005 ? 0 : value;
+      return rounded.toFixed(2);
+    }
+
+    function defaultInvestment(a, b, value) {
+      const dir = direction(value);
+      const s = strength(value);
+      if (a === b) {
+        return `${a} 自相关为 1.00，用作矩阵基准。${factorNotes[a]}`;
+      }
+      if (dir === "正相关") {
+        return `${a} 与 ${b} 呈${s}正相关，说明两类风险在历史上存在同向共振。配置时不要简单把它们视作完全独立的收益来源。`;
+      }
+      if (dir === "负相关") {
+        return `${a} 与 ${b} 呈${s}负相关，历史上有一定分散效果。一个因子走强时，另一个因子往往偏弱。`;
+      }
+      return `${a} 与 ${b} 的相关性很低，历史上同步性不强，更适合做独立风险源来观察。`;
+    }
+
+    function defaultHedge(a, b, value) {
+      const dir = direction(value);
+      if (a === b) {
+        return "自身无法形成对冲，需要寻找与其负相关或低相关的其他因子。";
+      }
+      if (dir === "正相关") {
+        return "对冲时应避免同时加码两个同向因子。若组合已暴露于其中一个因子，另一个因子的风险预算应适当打折。";
+      }
+      if (dir === "负相关") {
+        return "负相关组合可作为初步对冲线索，但相关性会随宏观阶段变化，仍需结合当前估值、政策和事件风险。";
+      }
+      return "低相关意味着可提供分散，但对冲效率可能不稳定，更适合做组合分散而不是精准 hedge。";
+    }
+
+    function updateDetail(i, j, { open = true } = {}) {
+      document.querySelectorAll("#heatmap td").forEach(td => td.classList.remove("active"));
+      const active = document.querySelector(`#heatmap [data-i="${i}"][data-j="${j}"]`);
+      if (active) active.classList.add("active");
+      selectedCell = [i, j];
+      if (open && i !== j) openPairDrilldown(labels[i], labels[j]);
+    }
+
+    function updateDetailHf(i, j, { open = true } = {}) {
+      document.querySelectorAll("#heatmapHf td").forEach(td => td.classList.remove("active"));
+      const active = document.querySelector(`#heatmapHf [data-i="${i}"][data-j="${j}"]`);
+      if (active) active.classList.add("active");
+      selectedCellHf = [i, j];
+      if (open && i !== j) openPairDrilldown(labels[i], labels[j]);
+    }
+
+    function currentCompareRange() {
+      const startMonth = document.getElementById("startMonth").value;
+      const endMonth = document.getElementById("endMonth").value;
+      if (startMonth && endMonth) return { start: startMonth, end: endMonth };
+      const startWeek = document.getElementById("startWeek").value;
+      const endWeek = document.getElementById("endWeek").value;
+      if (startWeek && endWeek) {
+        return { start: startWeek.slice(0, 7), end: endWeek.slice(0, 7) };
+      }
+      return { start: null, end: null };
+    }
+
+    function svgLineChart(seriesList, { yMin = null, yMax = null } = {}) {
+      const width = 520;
+      const height = 210;
+      const pad = { l: 36, r: 12, t: 12, b: 28 };
+      const allY = seriesList.flatMap(s => s.y.filter(v => Number.isFinite(v)));
+      if (!allY.length) return `<svg viewBox="0 0 ${width} ${height}"><text x="20" y="40" fill="#64748b">无数据</text></svg>`;
+      let ymin = yMin == null ? Math.min(...allY) : yMin;
+      let ymax = yMax == null ? Math.max(...allY) : yMax;
+      if (ymin === ymax) {
+        ymin -= 1;
+        ymax += 1;
+      }
+      const n = Math.max(...seriesList.map(s => s.y.length), 2);
+      const xScale = i => pad.l + (i / (n - 1)) * (width - pad.l - pad.r);
+      const yScale = v => pad.t + (1 - (v - ymin) / (ymax - ymin)) * (height - pad.t - pad.b);
+      const zero = (ymin < 0 && ymax > 0)
+        ? `<line x1="${pad.l}" x2="${width - pad.r}" y1="${yScale(0)}" y2="${yScale(0)}" stroke="#cbd5e1" stroke-dasharray="4 4"/>`
+        : "";
+      const paths = seriesList.map(s => {
+        const pts = [];
+        s.y.forEach((v, i) => {
+          if (!Number.isFinite(v)) return;
+          pts.push(`${xScale(i).toFixed(1)},${yScale(v).toFixed(1)}`);
+        });
+        if (pts.length < 2) return "";
+        return `<polyline fill="none" stroke="${s.color}" stroke-width="2" points="${pts.join(" ")}" />`;
+      }).join("");
+      const firstT = seriesList[0]?.t?.[0] || "";
+      const lastT = seriesList[0]?.t?.[n - 1] || seriesList[0]?.t?.slice(-1)[0] || "";
+      return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        ${zero}
+        ${paths}
+        <text x="${pad.l}" y="${height - 8}" fill="#94a3b8" font-size="11">${firstT}</text>
+        <text x="${width - pad.r}" y="${height - 8}" fill="#94a3b8" font-size="11" text-anchor="end">${lastT}</text>
+        <text x="4" y="${yScale(ymax) + 4}" fill="#94a3b8" font-size="10">${ymax.toFixed(1)}</text>
+        <text x="4" y="${yScale(ymin)}" fill="#94a3b8" font-size="10">${ymin.toFixed(1)}</text>
+      </svg>`;
+    }
+
+    function svgRollingChart(lfRoll, hfRoll) {
+      const width = 520;
+      const height = 210;
+      const pad = { l: 36, r: 12, t: 12, b: 28 };
+      const parseT = t => {
+        if (!t) return null;
+        if (/^\d{4}-\d{2}$/.test(t)) return Date.parse(`${t}-01`);
+        return Date.parse(t);
+      };
+      const pts = [
+        ...lfRoll.map(d => ({ x: parseT(d.t), y: d.corr, color: "#8b1e1e" })),
+        ...hfRoll.map(d => ({ x: parseT(d.t), y: d.corr, color: "#2563eb" })),
+      ].filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+      if (!pts.length) {
+        return `<svg viewBox="0 0 ${width} ${height}"><text x="20" y="40" fill="#64748b">无数据</text></svg>`;
+      }
+      const xs = pts.map(p => p.x);
+      const xmin = Math.min(...xs);
+      const xmax = Math.max(...xs);
+      const ymin = -1;
+      const ymax = 1;
+      const xScale = v => pad.l + ((v - xmin) / (xmax - xmin || 1)) * (width - pad.l - pad.r);
+      const yScale = v => pad.t + (1 - (v - ymin) / (ymax - ymin)) * (height - pad.t - pad.b);
+      const pathFor = (arr, color) => {
+        const coords = arr
+          .map(d => ({ x: parseT(d.t), y: d.corr }))
+          .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+          .map(p => `${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`);
+        if (coords.length < 2) return "";
+        return `<polyline fill="none" stroke="${color}" stroke-width="2" points="${coords.join(" ")}" />`;
+      };
+      const fmt = ms => {
+        const d = new Date(ms);
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        return `${d.getFullYear()}-${m}`;
+      };
+      return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <line x1="${pad.l}" x2="${width - pad.r}" y1="${yScale(0)}" y2="${yScale(0)}" stroke="#cbd5e1" stroke-dasharray="4 4"/>
+        ${pathFor(lfRoll, "#8b1e1e")}
+        ${pathFor(hfRoll, "#2563eb")}
+        <text x="${pad.l}" y="${height - 8}" fill="#94a3b8" font-size="11">${fmt(xmin)}</text>
+        <text x="${width - pad.r}" y="${height - 8}" fill="#94a3b8" font-size="11" text-anchor="end">${fmt(xmax)}</text>
+        <text x="4" y="${yScale(1) + 4}" fill="#94a3b8" font-size="10">1.0</text>
+        <text x="4" y="${yScale(-1)}" fill="#94a3b8" font-size="10">-1.0</text>
+      </svg>`;
+    }
+
+    async function openPairDrilldown(factorA, factorB) {
+      const panel = document.getElementById("pairDrilldown");
+      panel.classList.add("open");
+      document.getElementById("pairTitle").textContent = `${factorA} × ${factorB}：高低频差异拆解`;
+      document.getElementById("pairDiagnosis").textContent = "加载对比数据中...";
+      document.getElementById("pairChips").innerHTML = "";
+      document.getElementById("chartLfSeries").innerHTML = "";
+      document.getElementById("chartHfSeries").innerHTML = "";
+      document.getElementById("chartRolling").innerHTML = "";
+
+      const range = currentCompareRange();
+      const params = new URLSearchParams({ factor_a: factorA, factor_b: factorB });
+      if (range.start) params.set("start", range.start);
+      if (range.end) params.set("end", range.end);
+
+      try {
+        const res = await fetch(`/api/corr-pair-compare?${params.toString()}`, { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "对比接口失败");
+
+        document.getElementById("pairHint").textContent =
+          `区间 ${data.start} ~ ${data.end} · 月频 ${data.lf.n} 个月 · 周频 ${data.hf.n} 周 · 月末抽样对齐 ${data.hf_month_end.n} 个月`;
+
+        const chips = [
+          ["月频相关", data.lf.corr],
+          ["周频相关", data.hf.corr],
+          ["Δ(周-月)", data.delta.hf_minus_lf],
+          ["高频月末抽样相关", data.hf_month_end.corr],
+          ["同月低频相关", data.hf_month_end.lf_corr_same_months],
+        ];
+        document.getElementById("pairChips").innerHTML = chips.map(([k, v]) =>
+          `<span class="pair-chip">${k} <strong>${v == null ? "—" : (Number(v) >= 0 ? "+" : "") + Number(v).toFixed(2)}</strong></span>`
+        ).join("");
+
+        document.getElementById("pairDiagnosis").textContent = data.diagnosis;
+
+        const cA = "#8b1e1e";
+        const cB = "#2563eb";
+        document.getElementById("legendLf").innerHTML =
+          `<span><i style="background:${cA}"></i>${factorA}</span><span><i style="background:${cB}"></i>${factorB}</span>`;
+        document.getElementById("legendHf").innerHTML =
+          `<span><i style="background:${cA}"></i>${factorA}</span><span><i style="background:${cB}"></i>${factorB}</span>`;
+
+        document.getElementById("chartLfSeries").innerHTML = svgLineChart([
+          { t: data.lf.dates, y: data.lf.a_z, color: cA },
+          { t: data.lf.dates, y: data.lf.b_z, color: cB },
+        ]);
+        document.getElementById("chartHfSeries").innerHTML = svgLineChart([
+          { t: data.hf.dates, y: data.hf.a_z, color: cA },
+          { t: data.hf.dates, y: data.hf.b_z, color: cB },
+        ]);
+
+        const rollLf = data.lf.rolling_corr || [];
+        const rollHf = data.hf.rolling_corr || [];
+        document.getElementById("chartRolling").innerHTML = svgRollingChart(rollLf, rollHf);
+
+        panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (err) {
+        document.getElementById("pairDiagnosis").textContent = `加载失败：${err.message}`;
+      }
+    }
+
+    function buildHeatmap() {
+      const table = document.getElementById("heatmap");
+      table.innerHTML = "";
+      const head = document.createElement("tr");
+      head.appendChild(Object.assign(document.createElement("th"), { className: "corner", textContent: "" }));
+      labels.forEach(label => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        head.appendChild(th);
+      });
+      table.appendChild(head);
+
+      labels.forEach((rowLabel, i) => {
+        const tr = document.createElement("tr");
+        const th = document.createElement("th");
+        th.textContent = rowLabel;
+        tr.appendChild(th);
+        labels.forEach((_, j) => {
+          const td = document.createElement("td");
+          const value = corr[i][j];
+          td.textContent = formatCorr(value);
+          td.style.background = colorFor(value, i === j);
+          td.dataset.i = i;
+          td.dataset.j = j;
+          td.title = `${labels[i]} × ${labels[j]}: ${formatCorr(value)}`;
+          if (i === j) {
+            td.style.color = "#fff";
+            td.style.fontWeight = "800";
+          }
+          td.addEventListener("click", () => updateDetail(i, j));
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      updateDetail(selectedCell[0], selectedCell[1], { open: false });
+    }
+
+    function buildHeatmapHf() {
+      const table = document.getElementById("heatmapHf");
+      table.innerHTML = "";
+      const head = document.createElement("tr");
+      head.appendChild(Object.assign(document.createElement("th"), { className: "corner", textContent: "" }));
+      labels.forEach(label => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        head.appendChild(th);
+      });
+      table.appendChild(head);
+
+      labels.forEach((rowLabel, i) => {
+        const tr = document.createElement("tr");
+        const th = document.createElement("th");
+        th.textContent = rowLabel;
+        tr.appendChild(th);
+        labels.forEach((_, j) => {
+          const td = document.createElement("td");
+          const value = hfCorr[i][j];
+          td.textContent = formatCorr(value);
+          td.style.background = colorFor(value, i === j);
+          td.dataset.i = i;
+          td.dataset.j = j;
+          td.title = `${labels[i]} × ${labels[j]}: ${formatCorr(value)}`;
+          if (i === j) {
+            td.style.color = "#fff";
+            td.style.fontWeight = "800";
+          }
+          td.addEventListener("click", () => updateDetailHf(i, j));
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      updateDetailHf(selectedCellHf[0], selectedCellHf[1], { open: false });
+    }
+
+    function initSheetTabs() {
+      const tabs = document.querySelectorAll(".sheet-tab");
+      const panels = document.querySelectorAll(".sheet-panel");
+      tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+          const target = tab.dataset.target;
+          tabs.forEach(t => t.classList.toggle("active", t === tab));
+          panels.forEach(p => p.classList.toggle("active", p.id === target));
+        });
+      });
+    }
+
+    function exposureColor(value, maxAbs) {
+      if (!Number.isFinite(value)) return "#f8fafc";
+      const t = Math.min(1, Math.abs(value) / Math.max(maxAbs, 0.01));
+      if (value > 0) {
+        return `rgb(255, ${Math.round(255 - 115 * t)}, ${Math.round(255 - 115 * t)})`;
+      }
+      if (value < 0) {
+        return `rgb(${Math.round(255 - 115 * t)}, 255, ${Math.round(255 - 95 * t)})`;
+      }
+      return "#ffffff";
+    }
+
+    function formatExposure(value) {
+      if (!Number.isFinite(value)) return "—";
+      const clean = Math.abs(value) < 0.0005 ? 0 : value;
+      return clean.toFixed(3);
+    }
+
+    function formatR2(value) {
+      if (!Number.isFinite(value)) return "—";
+      return value.toFixed(2);
+    }
+
+    function renderExposureTable(data) {
+      const table = document.getElementById("exposureTable");
+      table.innerHTML = "";
+      const factors = data.factors || labels;
+      const assets = data.assets || [];
+      const values = assets.flatMap(asset => factors.map(factor => Number(data.matrix?.[asset]?.[factor] || 0)));
+      const maxAbs = Math.max(0.05, ...values.map(v => Math.abs(v)));
+
+      const head = document.createElement("tr");
+      head.appendChild(Object.assign(document.createElement("th"), { textContent: "资产" }));
+      factors.forEach(factor => {
+        head.appendChild(Object.assign(document.createElement("th"), { textContent: factor }));
+      });
+      const r2Head = Object.assign(document.createElement("th"), { textContent: "R方" });
+      r2Head.className = "r2-col";
+      head.appendChild(r2Head);
+      table.appendChild(head);
+
+      assets.forEach(asset => {
+        const tr = document.createElement("tr");
+        tr.appendChild(Object.assign(document.createElement("td"), { textContent: asset }));
+        factors.forEach(factor => {
+          const value = Number(data.matrix?.[asset]?.[factor] || 0);
+          const td = document.createElement("td");
+          td.textContent = formatExposure(value);
+          td.style.background = exposureColor(value, maxAbs);
+          td.title = `${asset} × ${factor}: ${formatExposure(value)}`;
+          tr.appendChild(td);
+        });
+
+        const r2Value = Number(data.r_squared?.[asset] ?? NaN);
+        const r2Td = document.createElement("td");
+        r2Td.className = "r2-col";
+        const r2Inner = document.createElement("div");
+        r2Inner.className = "exposure-r2-cell";
+        const r2Fill = document.createElement("div");
+        r2Fill.className = "exposure-r2-fill";
+        r2Fill.style.width = `${Math.max(0, Math.min(100, r2Value * 100))}%`;
+        const r2Text = document.createElement("span");
+        r2Text.className = "exposure-r2-value";
+        r2Text.textContent = formatR2(r2Value);
+        r2Inner.appendChild(r2Fill);
+        r2Inner.appendChild(r2Text);
+        r2Td.appendChild(r2Inner);
+        r2Td.title = `${asset} 回归 R方: ${formatR2(r2Value)}`;
+        tr.appendChild(r2Td);
+        table.appendChild(tr);
+      });
+    }
+
+    function updateExposureUI(data) {
+      const badge = document.getElementById("exposureBadge");
+      const meta = document.getElementById("exposureMeta");
+      badge.textContent = `暴露窗口：${data.window_start} ~ ${data.window_end}`;
+      meta.innerHTML = `
+        <span class="chip">截至：${data.as_of}</span>
+        <span class="chip">Y：${data.y_definition || "资产周度收益率"}</span>
+        <span class="chip">X：${data.x_definition || "宏观高频因子周度环比"}</span>
+        <span class="chip">滚动窗口：${data.rolling_window_weeks ?? data.rolling_window_months}周</span>
+        <span class="chip">样本长度：${data.sample_length_weeks ?? data.sample_length_months}周</span>
+        <span class="chip">Bootstrap：${data.bootstrap_samples}次</span>
+        <span class="chip">Lasso惩罚：×${data.alpha_scale ?? 1}</span>
+        <span class="chip">模型：Lasso</span>
+      `;
+      renderExposureTable(data);
+    }
+
+    async function fetchExposureWeeks(rollingWeeks) {
+      const response = await fetch(
+        `/api/factor-exposure/weeks?rolling_window_weeks=${encodeURIComponent(rollingWeeks)}`,
+        { cache: "no-store" },
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "无法读取可选结束周列表");
+      }
+      return data;
+    }
+
+    function populateExposureEndWeeks(weeks, preferredEnd) {
+      const endSelect = document.getElementById("exposureEndWeek");
+      const previous = preferredEnd || endSelect.value;
+      endSelect.innerHTML = "";
+      weeks.forEach(week => endSelect.add(new Option(week, week)));
+      if (previous && weeks.includes(previous)) {
+        endSelect.value = previous;
+      } else if (weeks.length) {
+        endSelect.value = weeks[weeks.length - 1];
+      }
+    }
+
+    async function fetchFactorExposure(end, rollingWeeks) {
+      const params = new URLSearchParams({
+        end,
+        rolling_window_weeks: String(rollingWeeks),
+      });
+      const response = await fetch(`/api/factor-exposure?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "因子暴露计算失败");
+      }
+      return data;
+    }
+
+    async function applyExposureRange() {
+      const status = document.getElementById("exposureStatus");
+      const end = document.getElementById("exposureEndWeek").value;
+      const rollingWeeks = Number(document.getElementById("exposureRollingWeeks").value);
+      if (!end) return;
+      status.textContent = "计算中，约需数秒...";
+      try {
+        const data = await fetchFactorExposure(end, rollingWeeks);
+        updateExposureUI(data);
+        status.textContent = `窗口 ${data.window_start} ~ ${data.window_end}（${data.rolling_window_weeks} 周）`;
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    }
+
+    async function onExposureRollingChange() {
+      const status = document.getElementById("exposureStatus");
+      const rollingWeeks = Number(document.getElementById("exposureRollingWeeks").value);
+      const endSelect = document.getElementById("exposureEndWeek");
+      const preferredEnd = endSelect.value;
+      status.textContent = "更新可选结束周...";
+      try {
+        const weeksData = await fetchExposureWeeks(rollingWeeks);
+        populateExposureEndWeeks(weeksData.weeks || [], preferredEnd);
+        const count = weeksData.weeks?.length || 0;
+        const total = weeksData.total_weeks || count;
+        status.textContent = `可选 ${count} 个结束周（总样本 ${total} 周，窗口 ${rollingWeeks} 周）`;
+        await applyExposureRange();
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    }
+
+    async function initFactorExposure() {
+      const badge = document.getElementById("exposureBadge");
+      const meta = document.getElementById("exposureMeta");
+      const status = document.getElementById("exposureStatus");
+      const rollingSelect = document.getElementById("exposureRollingWeeks");
+      const endSelect = document.getElementById("exposureEndWeek");
+      try {
+        const latestResponse = await fetch("/factor_exposure_latest.json", { cache: "no-store" });
+        const latestData = await latestResponse.json();
+        if (!latestResponse.ok) {
+          throw new Error(latestData.detail || "无法读取 factor_exposure_latest.json");
+        }
+
+        const rollingWeeks = Number(latestData.rolling_window_weeks || 260);
+        const totalWeeksHint = Number(latestData.rolling_window_weeks || rollingWeeks);
+        const fullOpt = document.getElementById("exposureFullSampleOption");
+        if (fullOpt) {
+          // 先用最新结果窗口占位；拉取可选周后再用 total_weeks 覆盖
+          fullOpt.value = String(Math.max(rollingWeeks, totalWeeksHint));
+          fullOpt.textContent = `全样本（${fullOpt.value}周）`;
+        }
+        rollingSelect.value = String(rollingWeeks);
+        if (![...rollingSelect.options].some(option => option.value === String(rollingWeeks))) {
+          rollingSelect.add(new Option(`${rollingWeeks}周（当前）`, String(rollingWeeks)));
+          rollingSelect.value = String(rollingWeeks);
+        }
+
+        const weeksData = await fetchExposureWeeks(rollingWeeks);
+        const totalWeeks = Number(weeksData.total_weeks || rollingWeeks);
+        if (fullOpt) {
+          fullOpt.value = String(totalWeeks);
+          fullOpt.textContent = `全样本（${totalWeeks}周）`;
+          // 若当前结果就是全样本窗口，保持选中
+          if (Number(latestData.rolling_window_weeks) === totalWeeks) {
+            rollingSelect.value = String(totalWeeks);
+          }
+        }
+        const subtitle = document.getElementById("exposureSubtitle");
+        if (subtitle) {
+          subtitle.textContent =
+            `Y 为大类资产周度对数收益率，X 为宏观高频因子周度环比/变化；` +
+            `当前结果窗口 ${latestData.rolling_window_weeks} 周` +
+            `（${latestData.window_start} ~ ${latestData.window_end}），Bootstrap + Lasso`;
+        }
+        populateExposureEndWeeks(
+          weeksData.weeks || [],
+          latestData.window_end || weeksData.default_end,
+        );
+
+        rollingSelect.addEventListener("change", onExposureRollingChange);
+        endSelect.addEventListener("change", applyExposureRange);
+
+        updateExposureUI(latestData);
+        const count = weeksData.weeks?.length || 0;
+        status.textContent = `窗口 ${latestData.window_start} ~ ${latestData.window_end}（${latestData.rolling_window_weeks} 周，可选 ${count} 个结束周）`;
+      } catch (error) {
+        badge.textContent = "暴露矩阵加载失败";
+        meta.innerHTML = `<span class="chip">${error.message}。请先运行 python "factor exposure/compute_factor_exposure.py"</span>`;
+        status.textContent = error.message;
+      }
+    }
+
+    const chatHistory = [];
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function appendChat(role, content) {
+      const log = document.getElementById("chatLog");
+      const div = document.createElement("div");
+      div.className = `chat-msg ${role}`;
+      div.innerHTML = `<div class="role">${role === "user" ? "你" : "助手"}</div><div class="chat-bubble">${escapeHtml(content)}</div>`;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+      return div;
+    }
+
+    async function checkOllama() {
+      const status = document.getElementById("ollamaStatus");
+      const select = document.getElementById("modelSelect");
+      try {
+        const res = await fetch("/api/health");
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Ollama 不可用");
+        status.textContent = `Ollama 已连接 · 默认 ${data.default_model}`;
+        status.className = "chat-status ok";
+        select.innerHTML = "";
+        (data.models || []).forEach(name => {
+          select.add(new Option(name, name, false, name === data.default_model));
+        });
+        if (!select.options.length) {
+          select.add(new Option(data.default_model, data.default_model, true, true));
+        }
+      } catch (err) {
+        status.textContent = `Ollama 未连接：${err.message}`;
+        status.className = "chat-status err";
+        select.innerHTML = "";
+        select.add(new Option("qwen2.5:7b", "qwen2.5:7b", true, true));
+      }
+    }
+
+    async function sendChat() {
+      const input = document.getElementById("chatInput");
+      const btn = document.getElementById("sendChatBtn");
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendChat("user", text);
+      chatHistory.push({ role: "user", content: text });
+      input.value = "";
+      btn.disabled = true;
+      btn.textContent = "思考中";
+      const pending = appendChat("assistant", "正在检索项目资料并调用本地 Qwen...");
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: document.getElementById("modelSelect").value,
+            messages: chatHistory,
+            use_live_context: true,
+            use_retrieval: true,
+            use_tools: true,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "请求失败");
+        chatHistory.push({ role: "assistant", content: data.content });
+        let meta = "";
+        if (data.tool_calls?.length) {
+          meta += `\n\n[工具] ${data.tool_calls.map(t => t.name).join(", ")}`;
+        }
+        if (data.retrieved?.length) {
+          meta += `\n[检索] ${data.retrieved.map(r => r.source).join(" · ")}`;
+        }
+        pending.querySelector(".chat-bubble").textContent = data.content + meta;
+      } catch (err) {
+        pending.querySelector(".chat-bubble").textContent = `出错：${err.message}。请确认已运行 python web/app.py 且 Ollama 服务已启动（默认模型 qwen2.5:7b）。`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "发送";
+      }
+    }
+
+    function initChat() {
+      checkOllama();
+      document.getElementById("sendChatBtn").addEventListener("click", sendChat);
+      document.getElementById("chatInput").addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendChat();
+        }
+      });
+      document.getElementById("clearChatBtn").addEventListener("click", () => {
+        chatHistory.length = 0;
+        document.getElementById("chatLog").innerHTML = `
+          <div class="chat-msg assistant">
+            <div class="role">助手</div>
+            <div class="chat-bubble">对话已清空。可以继续提问宏观因子与对冲相关问题。</div>
+          </div>`;
+      });
+      document.querySelectorAll(".quick-prompt").forEach(button => {
+        button.addEventListener("click", () => {
+          document.getElementById("chatInput").value = button.textContent.trim();
+          sendChat();
+        });
+      });
+    }
+
+    function renderDebateMarkdown(text) {
+      const inline = value => escapeHtml(value)
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/`(.+?)`/g, "<code>$1</code>");
+      return String(text || "").split("\n").map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return "<div style=\"height:8px\"></div>";
+        if (trimmed.startsWith("### ")) return `<h3>${inline(trimmed.slice(4))}</h3>`;
+        if (trimmed.startsWith("## ")) return `<h2>${inline(trimmed.slice(3))}</h2>`;
+        if (trimmed.startsWith("# ")) return `<h1>${inline(trimmed.slice(2))}</h1>`;
+        if (/^[-*]\s+/.test(trimmed)) {
+          return `<div style="padding-left:16px">• ${inline(trimmed.replace(/^[-*]\s+/, ""))}</div>`;
+        }
+        if (/^\d+\.\s+/.test(trimmed)) {
+          return `<div style="padding-left:16px">${inline(trimmed)}</div>`;
+        }
+        return `<div>${inline(line)}</div>`;
+      }).join("");
+    }
+
+    function renderDebateResult(data) {
+      const results = document.getElementById("debateResults");
+      const turnsEl = document.getElementById("debateTurns");
+      const reportEl = document.getElementById("debateReport");
+      const traceMeta = document.getElementById("debateTraceMeta");
+      const reportMeta = document.getElementById("debateReportMeta");
+      const turns = data.turns || [];
+      let lastRound = null;
+      const blocks = [];
+
+      turns.forEach(turn => {
+        if (turn.round !== lastRound) {
+          lastRound = turn.round;
+          blocks.push(`<div class="debate-round-title">第 ${turn.round} 轮</div>`);
+        }
+        const tools = (turn.tool_calls || []).map(item => item.name).join("、");
+        const sources = [...new Set(turn.sources || [])].slice(0, 4).join(" · ");
+        const meta = [
+          tools ? `工具：${tools}` : "",
+          sources ? `资料：${sources}` : "",
+          turn.error ? `异常：${turn.error}` : "",
+        ].filter(Boolean).join(" ｜ ");
+        blocks.push(`
+          <article class="debate-turn" data-expert="${escapeHtml(turn.expert)}">
+            <div class="debate-turn-head">
+              <strong>${escapeHtml(turn.expert_label)}</strong>
+              <span class="debate-turn-meta">${escapeHtml(meta || "基于共享上下文")}</span>
+            </div>
+            <div class="debate-markdown">${renderDebateMarkdown(turn.content)}</div>
+          </article>`);
+      });
+
+      turnsEl.innerHTML = blocks.join("") || `<div class="vol-empty">没有专家发言记录</div>`;
+      reportEl.innerHTML = renderDebateMarkdown(data.final_report || "协调人未生成报告。");
+      traceMeta.textContent = `${turns.length} 次发言 · ${data.rounds} 轮`;
+      reportMeta.textContent = `${data.status} · ${(Number(data.elapsed_ms || 0) / 1000).toFixed(1)} 秒`;
+      results.classList.add("open");
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function runAgentDebate() {
+      const topicEl = document.getElementById("debateTopic");
+      const assetsEl = document.getElementById("debateAssets");
+      const roundsEl = document.getElementById("debateRounds");
+      const button = document.getElementById("runDebateBtn");
+      const status = document.getElementById("debateStatus");
+      const topic = topicEl.value.trim();
+      if (!topic) {
+        status.textContent = "请先输入辩论议题。";
+        topicEl.focus();
+        return;
+      }
+
+      const rounds = Number(roundsEl.value || 2);
+      const model = document.getElementById("modelSelect")?.value || "qwen2.5:7b";
+      button.disabled = true;
+      button.textContent = "辩论进行中";
+      status.className = "debate-status running";
+      status.textContent = `正在运行 ${rounds} 轮：4 位专家依次发言，随后生成报告，请勿关闭页面…`;
+      document.getElementById("debateResults").classList.remove("open");
+
+      try {
+        const response = await fetch("/api/debate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic,
+            asset_focus: assetsEl.value.trim() || null,
+            rounds,
+            model,
+            use_retrieval: document.getElementById("debateRag").checked,
+            use_tools: document.getElementById("debateTools").checked,
+            use_live_context: document.getElementById("debateContext").checked,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "辩论请求失败");
+        renderDebateResult(data);
+        status.textContent = data.status === "completed"
+          ? "辩论完成，报告已生成。"
+          : `辩论以 ${data.status} 状态完成，请查看异常记录。`;
+        status.className = "debate-status";
+        window.latestDebateReport = data.final_report || "";
+      } catch (error) {
+        status.textContent = `运行失败：${error.message}`;
+        status.className = "debate-status";
+      } finally {
+        button.disabled = false;
+        button.textContent = "开始辩论";
+      }
+    }
+
+    function initAgentDebate() {
+      document.getElementById("runDebateBtn").addEventListener("click", runAgentDebate);
+      document.getElementById("copyDebateReport").addEventListener("click", async () => {
+        const text = window.latestDebateReport || "";
+        if (!text) return;
+        await navigator.clipboard.writeText(text);
+        document.getElementById("debateStatus").textContent = "报告已复制到剪贴板。";
+      });
+      document.getElementById("downloadDebateReport").addEventListener("click", () => {
+        const text = window.latestDebateReport || "";
+        if (!text) return;
+        const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `macro_debate_report_${new Date().toISOString().slice(0, 10)}.md`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+    }
+
+    async function initVolMonitor() {
+      const statusEl = document.getElementById("volStatus");
+      const noteEl = document.getElementById("volNote");
+      const hintEl = document.getElementById("volMonitorHint");
+      const factorEl = document.getElementById("volFactorList");
+      const shockEl = document.getElementById("volShockList");
+      const pressureEl = document.getElementById("volPressureList");
+      const forecastEl = document.getElementById("volForecast");
+      const probEl = document.getElementById("volForecastProb");
+      const titleEl = document.getElementById("volForecastTitle");
+      const textEl = document.getElementById("volForecastText");
+      const metaEl = document.getElementById("volForecastMeta");
+      const featsEl = document.getElementById("volForecastFeats");
+      const selectEl = document.getElementById("volForecastFactor");
+      const allEl = document.getElementById("volForecastAll");
+
+      let forecastCache = {};
+      let monitorFactors = [];
+      let forecastItems = [];
+
+      function currentRiskPct(factor) {
+        const item = monitorFactors.find(row => row.factor === factor);
+        return item?.vol_percentile == null ? null : Number(item.vol_percentile);
+      }
+
+      function forwardRiskPct(factor, detail = null) {
+        const item = forecastItems.find(row => row.factor === factor);
+        const probability = detail?.prob_high_vol ?? item?.prob_high_vol;
+        return probability == null ? null : Number(probability) * 100;
+      }
+
+      function unifiedRisk(factor, detail = null) {
+        const current = currentRiskPct(factor);
+        const forward = forwardRiskPct(factor, detail);
+        if (current == null && forward == null) return { score: null, current, forward };
+        if (current == null) return { score: forward, current, forward };
+        if (forward == null) return { score: current, current, forward };
+        return { score: (current + forward) / 2, current, forward };
+      }
+
+      function unifiedRiskLevel(score) {
+        if (score == null) return "数据不足";
+        if (score >= 75) return "偏高";
+        if (score >= 55) return "中性";
+        return "偏低";
+      }
+
+      function renderForecast(fc) {
+        if (!fc || fc.error) {
+          forecastEl.className = "vol-forecast";
+          probEl.textContent = "—";
+          titleEl.textContent = "波动风险暂不可用";
+          textEl.textContent = (fc && fc.error) || "暂不可用";
+          metaEl.textContent = "";
+          featsEl.innerHTML = "";
+          return;
+        }
+        const factor = fc.factor || "增长因子";
+        const risk = unifiedRisk(factor, fc);
+        const score = risk.score == null ? null : Math.round(risk.score);
+        const level = unifiedRiskLevel(risk.score);
+        forecastEl.className = "vol-forecast" + ((risk.score || 0) >= 75 ? " high" : "");
+        probEl.textContent = score == null ? "—" : score + "%";
+        titleEl.textContent = `${fc.factor_label || factor} · ${level}风险`;
+        if (risk.current != null && risk.forward != null) {
+          textEl.textContent =
+            `风险评分 ${score}% = 当前历史分位 ${Math.round(risk.current)}% × 50%` +
+            ` + 未来4周高波动概率 ${Math.round(risk.forward)}% × 50%。`;
+        } else {
+          textEl.textContent = `部分组成数据缺失，当前仅显示可用指标；${fc.interpretation || ""}`;
+        }
+        const tm = fc.test_metrics || {};
+        metaEl.textContent = tm.auc != null
+          ? `样本外 AUC ${tm.auc} · 准确率 ${tm.accuracy}`
+          : (fc.note || "");
+        featsEl.innerHTML = (fc.top_features || []).slice(0, 4).map(f =>
+          `<span><i>${f.feature}</i><b>${Number(f.importance).toFixed(3)}</b></span>`
+        ).join("") || "";
+      }
+
+      async function loadFactorForecast(factor) {
+        const key = factor || "增长因子";
+        if (!forecastCache[key]) {
+          const res = await fetch(`/api/vol-forecast?factor=${encodeURIComponent(key)}`, { cache: "no-store" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "预测失败");
+          forecastCache[key] = data;
+        }
+        renderForecast(forecastCache[key]);
+        if (selectEl.value !== key) selectEl.value = key;
+      }
+
+      try {
+        const res = await fetch("/api/vol-monitor?window=13&shock_z=2", { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "波动监控加载失败");
+
+        statusEl.textContent = data.status;
+        statusEl.className = "vol-status " + (
+          data.status === "偏高" ? "bad" : data.status === "留意" ? "warn" : "ok"
+        );
+        hintEl.textContent = `截至 ${data.as_of} · ${data.window_weeks} 周窗口 · 冲击阈值 ${data.shock_z}σ`;
+        noteEl.textContent = data.status_note;
+
+        // 先拉全部因子摘要，填充选择器
+        const allRes = await fetch("/api/vol-forecast?factor=all", { cache: "no-store" });
+        const allData = await allRes.json();
+        const items = allData.items || [];
+        monitorFactors = data.factors || [];
+        forecastItems = items;
+        selectEl.innerHTML = "";
+        (items.length ? items.map(i => i.factor) : ["增长因子", "通胀因子", "利率因子", "信用因子", "汇率因子", "地缘因子"])
+          .forEach(name => {
+            const label = items.find(i => i.factor === name)?.factor_label || name;
+            selectEl.add(new Option(label, name));
+          });
+
+        allEl.textContent = "统一口径：风险评分 = 当前波动历史分位 × 50% + 该因子未来4周高波动概率 × 50%。";
+        selectEl.addEventListener("change", () => loadFactorForecast(selectEl.value));
+
+        const defaultFactor = items[0]?.factor || "增长因子";
+        if (data.forecast && !data.forecast.error && data.forecast.factor && data.forecast.factor !== "综合") {
+          forecastCache[data.forecast.factor] = data.forecast;
+        }
+        await loadFactorForecast(defaultFactor);
+
+        factorEl.innerHTML = monitorFactors.map(f => {
+          const risk = unifiedRisk(f.factor);
+          const score = risk.score == null ? 0 : risk.score;
+          const rowClass = score >= 75 ? "high" : score >= 55 ? "mid" : "low";
+          const currentText = risk.current == null ? "—" : Math.round(risk.current) + "%";
+          const forwardText = risk.forward == null ? "—" : Math.round(risk.forward) + "%";
+          return `<div class="vol-row ${rowClass}">
+            <span class="name">${f.factor.replace("因子", "")}</span>
+            <div class="vol-risk-track">
+              <div class="vol-bar" title="风险评分 ${Math.round(score)}%"><span style="width:${Math.max(6, score)}%"></span></div>
+              <div class="vol-risk-components">当前 ${currentText} · 前瞻 ${forwardText}</div>
+            </div>
+            <span class="pct">${risk.score == null ? "—" : Math.round(risk.score) + "%"}</span>
+            <span class="lvl">${unifiedRiskLevel(risk.score)}</span>
+          </div>`;
+        }).join("") || `<div class="vol-empty">暂无因子数据</div>`;
+
+        if (data.shocks?.length) {
+          shockEl.innerHTML = data.shocks.map((s, i) =>
+            `<div class="vol-item shock">
+              <span class="rank">${i + 1}</span>
+              <div class="main">
+                <div class="title">${s.factor.replace("因子", "")} · ${s.direction}</div>
+                <div class="sub">本周变化触发冲击阈值</div>
+              </div>
+              <span class="metric">Z ${s.shock_z}</span>
+            </div>`
+          ).join("");
+        } else {
+          shockEl.innerHTML = `<div class="vol-empty">本周无明显冲击</div>`;
+        }
+
+        if (data.asset_pressure?.length) {
+          pressureEl.innerHTML = data.asset_pressure.slice(0, 5).map((a, i) =>
+            `<div class="vol-item">
+              <span class="rank">${i + 1}</span>
+              <div class="main">
+                <div class="title">${a.asset}</div>
+                <div class="sub">${a.top_factor ? "主因 " + a.top_factor.replace("因子", "") : "综合压力"}</div>
+              </div>
+              <span class="metric">${a.pressure.toFixed(2)}</span>
+            </div>`
+          ).join("");
+        } else {
+          pressureEl.innerHTML = `<div class="vol-empty">暂无暴露数据</div>`;
+        }
+      } catch (err) {
+        statusEl.textContent = "失败";
+        statusEl.className = "vol-status bad";
+        noteEl.textContent = err.message;
+      }
+    }
+
+    async function initModelPrediction() {
+      const badgeEl = document.getElementById("mpBadge");
+      const noteEl = document.getElementById("mpNote");
+      const weightAsOfEl = document.getElementById("mpWeightAsOf");
+      const weightsEl = document.getElementById("mpWeightsTable");
+      const figuresEl = document.getElementById("mpFigures");
+      const aggressionEl = document.getElementById("mpAggression");
+      const aggressionHintEl = document.getElementById("mpAggressionHint");
+      const lightbox = document.getElementById("mpLightbox");
+      const lightboxImg = document.getElementById("mpLightboxImg");
+
+      function bindZoom(root) {
+        if (!root) return;
+        root.querySelectorAll("img[data-full]").forEach(img => {
+          img.addEventListener("click", () => {
+            if (!lightbox || !lightboxImg) return;
+            lightboxImg.src = img.dataset.full || img.src;
+            lightbox.classList.add("open");
+          });
+        });
+      }
+
+      function figureCard(f) {
+        return `<figure class="mp-fig">` +
+          `<img src="${f.url}" alt="${f.title}" loading="lazy" data-full="${f.url}">` +
+          `<figcaption class="cap"><strong>${f.title}</strong><span>${f.desc || ""}</span></figcaption>` +
+          `</figure>`;
+      }
+
+      async function loadModelPrediction(aggression) {
+        const key = aggression || "balanced";
+        noteEl.textContent = "加载中...";
+        const res = await fetch(`/api/model-prediction?aggression=${encodeURIComponent(key)}`, { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "模型预测加载失败");
+
+        if (aggressionEl && Array.isArray(data.profiles) && data.profiles.length) {
+          const current = aggressionEl.value;
+          aggressionEl.innerHTML = "";
+          data.profiles.forEach(p => {
+            const opt = new Option(
+              p.ready ? p.label : `${p.label}（未生成）`,
+              p.key,
+              false,
+              p.key === (data.aggression || current)
+            );
+            opt.disabled = !p.ready;
+            aggressionEl.add(opt);
+          });
+          if (data.aggression) aggressionEl.value = data.aggression;
+        }
+
+        const profile = data.aggression_profile || {};
+        if (aggressionHintEl) {
+          aggressionHintEl.textContent =
+            `${data.aggression_label || ""} · 上限 ${(100 * (profile.weight_max || 0)).toFixed(0)}%` +
+            ` · CVaR厌恶 ${profile.cvar_risk_aversion ?? "—"} · 优化器 ${profile.optimizer_mode || "—"}` +
+            `（只改组合层，不改预测信号）`;
+        }
+
+        const m = data.metrics || {};
+        badgeEl.textContent =
+          `${data.aggression_label || ""} · ${m.start || "—"} ~ ${m.end || "—"} · 前瞻 ${data.forward_days || "—"} 日`;
+        noteEl.textContent = data.note || "";
+        if (weightAsOfEl) {
+          weightAsOfEl.textContent = data.as_of ? `截至 ${data.as_of}` : "Black-Litterman";
+        }
+
+        const keepOrder = ["01_nav_curve.png", "02_drawdown.png"];
+        const byFile = Object.fromEntries((data.figures || []).map(f => [f.file, f]));
+        const figures = keepOrder.map(file => byFile[file]).filter(Boolean);
+        figuresEl.innerHTML = figures.length
+          ? figures.map(f => figureCard(f)).join("")
+          : "<div class='vol-empty'>暂无图片</div>";
+        bindZoom(figuresEl);
+
+        const weights = data.latest_weights || [];
+        const maxW = Math.max(...weights.map(w => Number(w.weight) || 0), 1e-9);
+        weightsEl.innerHTML = [
+          "<colgroup><col class='asset'><col class='weight'><col class='score'><col class='mu'></colgroup>",
+          "<thead><tr><th>资产</th><th>权重</th><th>得分</th><th>μ_BL</th></tr></thead><tbody>",
+          weights.length
+            ? weights.map((w, i) => {
+                const pct = (Number(w.weight) || 0) * 100;
+                const bar = 100 * ((Number(w.weight) || 0) / maxW);
+                return `<tr class="${i < 3 ? "top" : ""}"><td>${w.asset_cn || w.asset}</td>` +
+                  `<td class="num"><div class="mp-weight-cell"><span>${pct.toFixed(1)}%</span>` +
+                  `<div class="mp-weight-bar"><i style="width:${bar.toFixed(1)}%"></i></div></div></td>` +
+                  `<td class="num">${w.score != null ? Number(w.score).toFixed(3) : "—"}</td>` +
+                  `<td class="num">${w.mu_bl != null ? (100 * w.mu_bl).toFixed(2) + "%" : "—"}</td></tr>`;
+              }).join("")
+            : "<tr><td colspan='4'>暂无权重</td></tr>",
+          "</tbody>",
+        ].join("");
+      }
+
+      try {
+        if (lightbox && lightboxImg) {
+          lightbox.addEventListener("click", () => lightbox.classList.remove("open"));
+        }
+        if (aggressionEl) {
+          aggressionEl.addEventListener("change", async () => {
+            try {
+              await loadModelPrediction(aggressionEl.value);
+            } catch (err) {
+              if (badgeEl) badgeEl.textContent = "加载失败";
+              if (noteEl) noteEl.textContent = err.message || String(err);
+            }
+          });
+        }
+        await loadModelPrediction(aggressionEl ? aggressionEl.value : "balanced");
+      } catch (err) {
+        if (badgeEl) badgeEl.textContent = "加载失败";
+        if (noteEl) noteEl.textContent = err.message || String(err);
+      }
+    }
+
+    initRangeControls();
+    initRangeControlsHf();
+    initVolMonitor();
+    initModelPrediction();
+    initFactorExposure();
+    initSheetTabs();
+    initChat();
+    initAgentDebate();
+    document.getElementById("pairCloseBtn").addEventListener("click", () => {
+      document.getElementById("pairDrilldown").classList.remove("open");
+    });
+  </script>
+</body>
+</html>
