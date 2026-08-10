@@ -169,6 +169,53 @@ python3 update_all_data.py --dry-run             # 只打印命令
 
 脚本会依次更新：宏观因子 → 资产价格与地缘合成 → 月/周相关矩阵 → 因子暴露 → 波动预测模型 → 模型预测回测。
 
+#### 更新后，网页数据会不会变？
+
+| 环境 | 会不会自动更新 | 怎么做 |
+|------|----------------|--------|
+| 本地 FastAPI（`web/app.py`） | 会 | 跑完后浏览器强刷即可（`Cmd + Shift + R`） |
+| 本地 Streamlit | 会 | 跑完后刷新页面；若仍是旧数据，重启一次 `streamlit run streamlit_app.py` |
+| Streamlit Cloud 线上站 | **不会** | 只读 GitHub 仓库；需把新数据 commit + push，Cloud 才会重新部署 |
+
+线上网站同步示例：
+
+```bash
+cd "/Users/xdw/Desktop/macro_quant"
+
+# 1) 本地更新全部数据
+python3 update_all_data.py
+
+# 2) 查看哪些数据文件变了
+git status
+
+# 3) 提交常见产出（按实际变更增删）
+git add \
+  macro_factor_monthly.csv macro_factor_corr.json macro_hf_factor_corr.json \
+  macro_hf_factor_weekly.csv \
+  "factor exposure/factor_exposure_latest.json" \
+  "factor exposure/factor_exposure_latest.csv" \
+  "factor exposure/data/combined_close.csv" \
+  "model prediction/output" \
+  "model prediction/models" \
+  growth/ inflasion/ "interest rate"/ credit/ exchange/ politics/ mobility/ web/
+
+git commit -m "$(cat <<'EOF'
+Update project data for Streamlit Cloud.
+
+Refresh factor panels, correlation matrices, exposure, and model outputs after update_all_data.
+EOF
+)"
+
+# 4) 推到 GitHub → Streamlit Cloud 自动重新部署
+git push origin main
+```
+
+说明：
+
+- `update_all_data.py` **只改本机文件**，不会直接改线上网站。
+- 线上站点要更新，关键是 **push 到 GitHub**；没有 push，Cloud 仍显示旧数据。
+- 若只想更新矩阵/暴露、不重跑模型：`python3 update_all_data.py --skip-model`，再按上面步骤提交对应 JSON/CSV。
+
 > 流动性在 `factors` 阶段会自动联网更新：M2（东方财富）+ 市盈率代理（乐咕乐股沪深300/中证1000）。社融存量同比仍依赖 `mobility/中国_M2_同比.csv`，公开源不稳定时需偶尔重导 Wind。
 
 > 地缘合成依赖沪金/原油价格，已放在资产拉取之后（`assets` 阶段）。
@@ -250,6 +297,8 @@ streamlit run streamlit_app.py
 包含：因子矩阵、波动警报、因子暴露、模型预测。AI 助手与 Agent 辩论仍依赖本机 Ollama，云端暂不开放。
 
 之后：本地修改 → `git push` → GitHub → Streamlit Cloud 自动重新部署。
+
+数据更新注意：本地执行 `python3 update_all_data.py` **不会**自动更新线上站；需把更新后的数据文件 commit 并 `git push origin main`。完整指令见上文「数据更新流程 → 更新后，网页数据会不会变？」。
 
 ### 聊天助手能力
 
