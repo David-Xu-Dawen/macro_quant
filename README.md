@@ -231,6 +231,28 @@ python3 app.py
 
 环境变量（可选）：`OLLAMA_HOST`、`OLLAMA_MODEL`（默认 `qwen2.5:7b`）。
 
+### Streamlit 入口（保留原界面）
+
+Streamlit Community Cloud 的 **Main file path** 填：
+
+```text
+streamlit_app.py
+```
+
+本地预览（会自动拉起 FastAPI）：
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Cloud 无法单独暴露 FastAPI 端口，需先用 Render 部署本仓库，再在 Streamlit Secrets 填写：
+
+```toml
+BACKEND_URL = "https://你的-render-服务.onrender.com"
+```
+
+之后：本地修改 → `git push` → GitHub → Render 自动更新主站；Streamlit 全屏嵌入同一界面。
+
 ### 聊天助手能力
 
 1. **实时上下文**：每次提问注入当前月频/周频相关矩阵摘要 + 最新因子暴露摘要  
@@ -303,6 +325,28 @@ ERROR: [Errno 48] address already in use
 ```bash
 lsof -ti :8765 | xargs kill
 cd web && python3 app.py
+
+### Streamlit 入口（保留原界面）
+
+Main file path 请填：
+
+```text
+streamlit_app.py
+```
+
+本地：
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Streamlit Community Cloud 需在 Secrets 配置 Render 后端地址（Cloud 无法单独暴露 FastAPI）：
+
+```toml
+BACKEND_URL = "https://你的-render-服务.onrender.com"
+```
+
+工作流：本地修改 → `git push` → GitHub → Render（主站）自动更新；Streamlit 只是全屏嵌入同一界面。
 ```
 
 ---

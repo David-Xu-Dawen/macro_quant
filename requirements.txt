@@ -1,0 +1,5 @@
+# Streamlit Community Cloud 入口依赖
+streamlit>=1.32.0
+
+# 与 web 服务共用（本地自动拉起 FastAPI 时需要）
+-r web/requirements.txt
