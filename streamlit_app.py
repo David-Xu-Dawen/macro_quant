@@ -39,7 +39,7 @@ st.set_page_config(
     page_title="宏观量化工作台",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 st.markdown(
@@ -114,33 +114,67 @@ st.markdown(
         background: #2f9b68;
         box-shadow: 0 0 0 4px rgba(47,155,104,.10);
       }
-      div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex;
-        gap: 6px;
-        padding: 5px;
-        margin-bottom: 16px;
-        border: 1px solid var(--mq-line);
-        border-radius: 15px;
-        background: rgba(255,255,255,.72);
-        box-shadow: 0 7px 24px rgba(37,28,20,.04);
+      section[data-testid="stSidebar"] {
+        width: 272px !important;
+        border-right: 1px solid rgba(37,45,54,.08);
+        background:
+          radial-gradient(circle at 10% 0%, rgba(157,53,53,.10), transparent 17rem),
+          linear-gradient(180deg, rgba(250,248,244,.98), rgba(244,246,244,.98));
       }
-      div[data-testid="stRadio"] > div[role="radiogroup"] label {
-        flex: 1;
-        justify-content: center;
-        min-height: 38px;
-        padding: 7px 12px;
-        border-radius: 10px;
+      section[data-testid="stSidebar"] > div {
+        padding: 1.25rem .85rem;
+      }
+      .mq-side-brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 4px 7px 17px;
+        margin-bottom: 9px;
+        border-bottom: 1px solid var(--mq-line);
+      }
+      .mq-side-label {
+        padding: 7px 10px 5px;
+        color: #8a9299;
+        font-size: .66rem;
+        font-weight: 800;
+        letter-spacing: .15em;
+        text-transform: uppercase;
+      }
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 2px;
+      }
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        justify-content: flex-start;
+        min-height: 45px;
+        padding: 9px 13px;
+        border: 1px solid transparent;
+        border-radius: 12px;
         transition: background .18s ease, color .18s ease, box-shadow .18s ease;
       }
-      div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
+        border-color: var(--mq-line);
+        background: rgba(255,255,255,.66);
+      }
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
         background: linear-gradient(135deg, #a13b3b, #7f2d2d);
         box-shadow: 0 7px 16px rgba(127,45,45,.18);
       }
-      div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) p {
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) p {
         color: white !important;
         font-weight: 700;
       }
-      div[data-testid="stRadio"] input { display: none; }
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] input { display: none; }
+      .mq-side-foot {
+        margin: 22px 7px 0;
+        padding-top: 14px;
+        border-top: 1px solid var(--mq-line);
+        color: #858d94;
+        font-size: .7rem;
+        line-height: 1.6;
+      }
       div[data-testid="stMetric"] {
         min-height: 108px;
         padding: 16px 17px;
@@ -224,7 +258,13 @@ st.markdown(
         border-radius: 9px;
         background: linear-gradient(var(--mq-red), var(--mq-gold));
       }
-      .mq-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
+      .mq-chip-row {
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        gap:8px;
+        margin:2px 0 8px;
+      }
       .mq-chip {
         display:inline-block;
         padding:7px 11px;
@@ -237,10 +277,10 @@ st.markdown(
       div[data-testid="stDataFrame"], div[data-testid="stPlotlyChart"],
       div[data-testid="stImage"] {
         border: 1px solid var(--mq-line);
-        border-radius: 17px;
+        border-radius: 14px;
         overflow: hidden;
         background: rgba(255,255,255,.67);
-        box-shadow: 0 8px 25px rgba(37,28,20,.045);
+        box-shadow: 0 6px 18px rgba(37,28,20,.04);
       }
       div[data-testid="stExpander"] {
         border: 1px solid var(--mq-line);
@@ -249,6 +289,18 @@ st.markdown(
         overflow: hidden;
       }
       div[data-testid="stExpander"] summary { font-weight: 680; }
+      div[data-testid="stExpander"] [data-testid="stVerticalBlock"] {
+        gap: .35rem !important;
+      }
+      div[data-testid="stExpander"] [data-testid="stHorizontalBlock"] {
+        gap: .55rem !important;
+      }
+      .mq-dense-label {
+        margin: 2px 0 0;
+        color: #4d565f;
+        font-size: .84rem;
+        font-weight: 720;
+      }
       div[data-baseweb="select"] > div,
       div[data-baseweb="input"] > div,
       div[data-testid="stTextInput"] input {
@@ -262,12 +314,19 @@ st.markdown(
         border-radius: 11px;
         border-color: rgba(157,53,53,.16);
         font-weight: 700;
-        transition: transform .16s ease, box-shadow .16s ease;
+        transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
       }
-      .stButton > button[kind="primary"] {
-        border: none;
-        background: linear-gradient(135deg, #a13b3b, #7f2d2d);
-        box-shadow: 0 8px 18px rgba(127,45,45,.18);
+      .stButton > button[kind="primary"],
+      .stButton > button[data-testid="baseButton-primary"] {
+        border: 1px solid rgba(196, 120, 112, .35) !important;
+        color: #5c2f2d !important;
+        background: linear-gradient(135deg, #f3d4cf, #e8b9b3) !important;
+        box-shadow: 0 6px 16px rgba(196,120,112,.16);
+      }
+      .stButton > button[kind="primary"]:hover,
+      .stButton > button[data-testid="baseButton-primary"]:hover {
+        background: linear-gradient(135deg, #f7ddd9, #efc4bf) !important;
+        color: #4a2624 !important;
       }
       .stButton > button:hover { transform: translateY(-1px); }
       .mq-footer {
@@ -284,38 +343,12 @@ st.markdown(
         .mq-brand-sub, .mq-live { display: none; }
         .mq-hero { padding: 21px 19px; border-radius: 17px; }
         .mq-hero p { font-size: .88rem; }
-        div[data-testid="stRadio"] > div[role="radiogroup"] {
-          overflow-x: auto;
-          justify-content: flex-start;
-        }
-        div[data-testid="stRadio"] > div[role="radiogroup"] label {
-          flex: 0 0 auto;
-          white-space: nowrap;
-        }
         div[data-testid="stMetric"] { min-height: 94px; }
       }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-
-def _app_header() -> None:
-    st.markdown(
-        """
-        <div class="mq-topbar">
-          <div class="mq-brand">
-            <div class="mq-brand-mark">MQ</div>
-            <div>
-              <div class="mq-brand-name">宏观量化工作台</div>
-              <div class="mq-brand-sub">Macro Intelligence & Asset Allocation</div>
-            </div>
-          </div>
-          <div class="mq-live">数据工作台在线</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 def _hero(title: str, subtitle: str, eyebrow: str = "MACRO QUANT") -> None:
@@ -470,12 +503,18 @@ def _line_figure(
     )
     fig.add_hline(y=0, line={"color": "rgba(100,116,139,.35)", "dash": "dot"})
     fig.update_layout(
-        title=title,
-        height=340,
-        margin=dict(l=20, r=12, t=48, b=24),
+        title={"text": title, "x": 0.02, "xanchor": "left"},
+        height=390,
+        margin=dict(l=30, r=24, t=58, b=72),
         hovermode="x unified",
-        legend={"orientation": "h", "y": 1.12},
-        yaxis_title="窗口内 Z-score",
+        legend={
+            "orientation": "h",
+            "x": 0,
+            "xanchor": "left",
+            "y": -0.20,
+            "yanchor": "top",
+        },
+        yaxis_title="Z-score",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(255,255,255,.55)",
     )
@@ -503,11 +542,17 @@ def _rolling_figure(pair: dict) -> go.Figure:
     fig.add_hline(y=0, line={"color": "rgba(100,116,139,.45)", "dash": "dot"})
     fig.update_yaxes(range=[-1.05, 1.05], title="相关系数")
     fig.update_layout(
-        title="滚动相关",
-        height=360,
-        margin=dict(l=20, r=12, t=48, b=24),
+        title={"text": "滚动相关", "x": 0.02, "xanchor": "left"},
+        height=420,
+        margin=dict(l=30, r=24, t=58, b=72),
         hovermode="x unified",
-        legend={"orientation": "h", "y": 1.12},
+        legend={
+            "orientation": "h",
+            "x": 0,
+            "xanchor": "left",
+            "y": -0.20,
+            "yanchor": "top",
+        },
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(255,255,255,.55)",
     )
@@ -543,25 +588,22 @@ def _pair_drilldown(factor_a: str, factor_b: str, start: str, end: str) -> None:
         f"周频 {pair['hf']['n']} 周 · 月末共同样本 {pair['hf_month_end']['n']} 个月"
     )
 
-    left, right = st.columns(2)
-    with left:
-        st.plotly_chart(
-            _line_figure(
-                pair["lf"]["dates"], pair["lf"]["a_z"], pair["lf"]["b_z"],
-                factor_a, factor_b, "月频序列（窗口内标准化）",
-            ),
-            width="stretch",
-            key=f"lf_pair_{factor_a}_{factor_b}_{start}_{end}",
-        )
-    with right:
-        st.plotly_chart(
-            _line_figure(
-                pair["hf"]["dates"], pair["hf"]["a_z"], pair["hf"]["b_z"],
-                factor_a, factor_b, "周频序列（窗口内标准化）",
-            ),
-            width="stretch",
-            key=f"hf_pair_{factor_a}_{factor_b}_{start}_{end}",
-        )
+    st.plotly_chart(
+        _line_figure(
+            pair["lf"]["dates"], pair["lf"]["a_z"], pair["lf"]["b_z"],
+            factor_a, factor_b, "月频序列（窗口内标准化）",
+        ),
+        width="stretch",
+        key=f"lf_pair_{factor_a}_{factor_b}_{start}_{end}",
+    )
+    st.plotly_chart(
+        _line_figure(
+            pair["hf"]["dates"], pair["hf"]["a_z"], pair["hf"]["b_z"],
+            factor_a, factor_b, "周频序列（窗口内标准化）",
+        ),
+        width="stretch",
+        key=f"hf_pair_{factor_a}_{factor_b}_{start}_{end}",
+    )
     st.plotly_chart(
         _rolling_figure(pair),
         width="stretch",
@@ -675,24 +717,24 @@ def page_vol(*, embedded: bool = False):
     st.caption(mon.get("status_note", ""))
 
     with st.expander("查看警报明细与资产压力", expanded=False):
-        left, right = st.columns([1.18, 0.82])
+        left, right = st.columns(2)
         with left:
-            st.markdown("**因子波动风险**")
+            st.subheader("因子波动风险")
             if factors.empty:
                 st.info("暂无因子波动数据")
             else:
                 show = factors[
                     ["factor", "vol_percentile", "vol_level", "week_change", "shock_z", "is_shock"]
                 ].copy()
-                show.columns = ["因子", "波动分位", "水平", "本周变化", "冲击 Z", "是否冲击"]
+                show.columns = ["因子", "波动分位", "水平", "本周变化", "冲击Z", "是否冲击"]
                 st.dataframe(show, width="stretch", hide_index=True)
         with right:
-            st.markdown("**本周冲击**")
+            st.subheader("本周冲击")
             if shocks.empty:
                 st.success("本周无明显冲击")
             else:
                 st.dataframe(shocks, width="stretch", hide_index=True)
-            st.markdown("**资产暴露压力 Top 10**")
+            st.subheader("暴露压力 Top")
             if pressure.empty:
                 st.info("暂无暴露压力")
             else:
@@ -890,21 +932,42 @@ def page_debate():
 
 
 def main():
-    _app_header()
     pages = {
-        "◫  因子矩阵与警报": page_matrix,
+        "▦  因子矩阵与警报": page_matrix,
         "◇  因子暴露": page_exposure,
         "↗  模型预测": page_model,
         "◎  Agent 辩论": page_debate,
         "⌕  AI 助手": page_assistant,
     }
-    selected = st.radio(
-        "页面导航",
-        list(pages),
-        horizontal=True,
-        label_visibility="collapsed",
-        key="main_navigation",
-    )
+    with st.sidebar:
+        st.markdown(
+            """
+            <div class="mq-side-brand">
+              <div class="mq-brand-mark">MQ</div>
+              <div>
+                <div class="mq-brand-name">宏观量化工作台</div>
+                <div class="mq-brand-sub">Research Workspace</div>
+              </div>
+            </div>
+            <div class="mq-side-label">Workspace</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        selected = st.radio(
+            "页面导航",
+            list(pages),
+            label_visibility="collapsed",
+            key="main_navigation",
+        )
+        st.markdown(
+            """
+            <div class="mq-side-foot">
+              <span class="mq-live">数据工作台在线</span><br><br>
+              Streamlit Cloud<br>与本地研究数据同源
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     pages[selected]()
     st.markdown(
         '<div class="mq-footer">MACRO QUANT WORKSPACE · 数据与本地研究项目同源</div>',
