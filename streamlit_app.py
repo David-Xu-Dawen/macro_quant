@@ -14,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -40,81 +39,260 @@ st.set_page_config(
     page_title="宏观量化工作台",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
     """
     <style>
+      :root {
+        --mq-ink: #17212b;
+        --mq-muted: #66717d;
+        --mq-red: #9d3535;
+        --mq-red-dark: #752626;
+        --mq-gold: #c89954;
+        --mq-line: rgba(37, 45, 54, .09);
+        --mq-surface: rgba(255, 255, 255, .88);
+        --mq-shadow: 0 14px 38px rgba(37, 28, 20, .07);
+      }
+      html { scroll-behavior: smooth; }
       .stApp {
         background:
-          radial-gradient(circle at 12% 0%, rgba(143,45,45,0.08), transparent 28%),
-          linear-gradient(145deg, #f8f3ed 0%, #f2f5f1 55%, #f7f1eb 100%);
+          radial-gradient(circle at 8% -5%, rgba(157,53,53,.10), transparent 27rem),
+          radial-gradient(circle at 92% 8%, rgba(200,153,84,.09), transparent 25rem),
+          linear-gradient(145deg, #f8f5f0 0%, #f2f5f3 52%, #f8f4ef 100%);
+        color: var(--mq-ink);
       }
+      [data-testid="stHeader"] { background: transparent; }
+      [data-testid="stDecoration"] { display: none; }
+      #MainMenu, footer { visibility: hidden; }
       .block-container {
-        max-width: 1420px;
-        padding-top: 1.6rem;
-        padding-bottom: 5rem;
+        max-width: 1380px;
+        padding-top: 1.1rem;
+        padding-bottom: 4rem;
       }
-      h1, h2, h3 { color: #1d252d !important; letter-spacing: 0.02em; }
-      div[data-testid="stTabs"] button {
-        border-radius: 10px 10px 0 0;
-        font-weight: 650;
+      h1, h2, h3 { color: var(--mq-ink) !important; letter-spacing: -.01em; }
+      p { color: #3f4953; }
+      .mq-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 9px 4px 16px;
       }
-      div[data-testid="stTabs"] button[aria-selected="true"] {
-        color: #8f2d2d;
-        background: rgba(143,45,45,0.06);
+      .mq-brand { display: flex; align-items: center; gap: 11px; }
+      .mq-brand-mark {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        color: white;
+        font: 800 .78rem/1 ui-sans-serif, system-ui;
+        letter-spacing: .08em;
+        background: linear-gradient(145deg, var(--mq-red), var(--mq-red-dark));
+        box-shadow: 0 8px 20px rgba(117,38,38,.20);
       }
+      .mq-brand-name { color: var(--mq-ink); font-size: 1rem; font-weight: 780; }
+      .mq-brand-sub { color: var(--mq-muted); font-size: .72rem; margin-top: 1px; }
+      .mq-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 10px;
+        border: 1px solid rgba(37,45,54,.08);
+        border-radius: 999px;
+        background: rgba(255,255,255,.64);
+        color: #5f6973;
+        font-size: .76rem;
+      }
+      .mq-live::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #2f9b68;
+        box-shadow: 0 0 0 4px rgba(47,155,104,.10);
+      }
+      div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        gap: 6px;
+        padding: 5px;
+        margin-bottom: 16px;
+        border: 1px solid var(--mq-line);
+        border-radius: 15px;
+        background: rgba(255,255,255,.72);
+        box-shadow: 0 7px 24px rgba(37,28,20,.04);
+      }
+      div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        flex: 1;
+        justify-content: center;
+        min-height: 38px;
+        padding: 7px 12px;
+        border-radius: 10px;
+        transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+      }
+      div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
+        background: linear-gradient(135deg, #a13b3b, #7f2d2d);
+        box-shadow: 0 7px 16px rgba(127,45,45,.18);
+      }
+      div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) p {
+        color: white !important;
+        font-weight: 700;
+      }
+      div[data-testid="stRadio"] input { display: none; }
       div[data-testid="stMetric"] {
-        background: rgba(255,255,255,0.78);
-        border: 1px solid rgba(51,42,35,0.10);
-        border-radius: 14px;
-        padding: 10px 12px;
+        min-height: 108px;
+        padding: 16px 17px;
+        border: 1px solid var(--mq-line);
+        border-radius: 16px;
+        background: var(--mq-surface);
+        box-shadow: 0 7px 25px rgba(37,28,20,.045);
+        transition: transform .18s ease, box-shadow .18s ease;
+      }
+      div[data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(37,28,20,.075);
+      }
+      div[data-testid="stMetricLabel"] p {
+        color: var(--mq-muted);
+        font-size: .78rem;
+        font-weight: 650;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+      }
+      div[data-testid="stMetricValue"] {
+        color: var(--mq-ink);
+        font-size: 1.48rem;
+        font-weight: 760;
       }
       .mq-note {
-        border-left: 3px solid #8f2d2d;
-        background: rgba(143,45,45,0.06);
-        border-radius: 0 12px 12px 0;
-        padding: 10px 14px;
-        color: #514348;
-        margin: 0 0 14px;
-        font-size: 0.92rem;
-        line-height: 1.55;
+        border: 1px solid rgba(157,53,53,.10);
+        border-left: 3px solid var(--mq-red);
+        background: rgba(157,53,53,.045);
+        border-radius: 4px 12px 12px 4px;
+        padding: 11px 14px;
+        color: #5d4b4d;
+        margin: 0 0 16px;
+        font-size: .88rem;
+        line-height: 1.6;
       }
       .mq-hero {
         position: relative;
         overflow: hidden;
-        padding: 22px 24px;
-        margin: 0 0 18px;
-        border: 1px solid rgba(51,42,35,0.10);
-        border-left: 4px solid #8f2d2d;
-        border-radius: 18px;
-        background: linear-gradient(112deg, rgba(255,255,255,0.96), rgba(255,250,245,0.86));
-        box-shadow: 0 12px 32px rgba(67,50,37,0.08);
+        padding: 27px 30px 25px;
+        margin: 0 0 22px;
+        border: 1px solid var(--mq-line);
+        border-radius: 21px;
+        background:
+          linear-gradient(112deg, rgba(255,255,255,.97), rgba(255,249,243,.88));
+        box-shadow: var(--mq-shadow);
       }
-      .mq-hero h1 { margin: 0; font-size: 1.75rem; }
-      .mq-hero p { margin: 7px 0 0; color: #6f747c; line-height: 1.6; }
+      .mq-hero::after {
+        content: "";
+        position: absolute;
+        width: 210px;
+        height: 210px;
+        right: -65px;
+        top: -95px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(157,53,53,.12), transparent 68%);
+      }
+      .mq-eyebrow {
+        margin-bottom: 7px;
+        color: var(--mq-red);
+        font-size: .71rem;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      .mq-hero h1 { margin: 0; font-size: clamp(1.55rem, 2.2vw, 2.05rem); font-weight: 790; }
+      .mq-hero p { max-width: 800px; margin: 8px 0 0; color: var(--mq-muted); line-height: 1.7; }
       .mq-section-title {
-        margin: 18px 0 8px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid rgba(51,42,35,0.10);
-        color: #262b31;
-        font-weight: 720;
-        font-size: 1.08rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 28px 0 13px;
+        color: var(--mq-ink);
+        font-weight: 760;
+        font-size: 1.05rem;
+      }
+      .mq-section-title::before {
+        content: "";
+        width: 4px;
+        height: 19px;
+        border-radius: 9px;
+        background: linear-gradient(var(--mq-red), var(--mq-gold));
       }
       .mq-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
       .mq-chip {
         display:inline-block;
-        padding:6px 10px;
-        border:1px solid rgba(143,45,45,0.13);
+        padding:7px 11px;
+        border:1px solid rgba(157,53,53,.13);
         border-radius:999px;
-        background:#fffaf7;
+        background:rgba(255,250,247,.92);
         color:#694043;
         font-size:.82rem;
       }
-      div[data-testid="stDataFrame"], div[data-testid="stPlotlyChart"] {
-        border-radius: 14px;
+      div[data-testid="stDataFrame"], div[data-testid="stPlotlyChart"],
+      div[data-testid="stImage"] {
+        border: 1px solid var(--mq-line);
+        border-radius: 17px;
         overflow: hidden;
+        background: rgba(255,255,255,.67);
+        box-shadow: 0 8px 25px rgba(37,28,20,.045);
+      }
+      div[data-testid="stExpander"] {
+        border: 1px solid var(--mq-line);
+        border-radius: 15px;
+        background: rgba(255,255,255,.62);
+        overflow: hidden;
+      }
+      div[data-testid="stExpander"] summary { font-weight: 680; }
+      div[data-baseweb="select"] > div,
+      div[data-baseweb="input"] > div,
+      div[data-testid="stTextInput"] input {
+        border-color: var(--mq-line) !important;
+        border-radius: 11px !important;
+        background: rgba(255,255,255,.82) !important;
+      }
+      .stButton > button {
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 11px;
+        border-color: rgba(157,53,53,.16);
+        font-weight: 700;
+        transition: transform .16s ease, box-shadow .16s ease;
+      }
+      .stButton > button[kind="primary"] {
+        border: none;
+        background: linear-gradient(135deg, #a13b3b, #7f2d2d);
+        box-shadow: 0 8px 18px rgba(127,45,45,.18);
+      }
+      .stButton > button:hover { transform: translateY(-1px); }
+      .mq-footer {
+        margin-top: 42px;
+        padding: 18px 4px 4px;
+        border-top: 1px solid var(--mq-line);
+        color: #7a838b;
+        font-size: .75rem;
+        text-align: center;
+      }
+      @media (max-width: 760px) {
+        .block-container { padding: .7rem .8rem 3rem; }
+        .mq-topbar { padding-bottom: 10px; }
+        .mq-brand-sub, .mq-live { display: none; }
+        .mq-hero { padding: 21px 19px; border-radius: 17px; }
+        .mq-hero p { font-size: .88rem; }
+        div[data-testid="stRadio"] > div[role="radiogroup"] {
+          overflow-x: auto;
+          justify-content: flex-start;
+        }
+        div[data-testid="stRadio"] > div[role="radiogroup"] label {
+          flex: 0 0 auto;
+          white-space: nowrap;
+        }
+        div[data-testid="stMetric"] { min-height: 94px; }
       }
     </style>
     """,
@@ -122,9 +300,28 @@ st.markdown(
 )
 
 
-def _hero(title: str, subtitle: str) -> None:
+def _app_header() -> None:
     st.markdown(
-        f'<div class="mq-hero"><h1>{title}</h1><p>{subtitle}</p></div>',
+        """
+        <div class="mq-topbar">
+          <div class="mq-brand">
+            <div class="mq-brand-mark">MQ</div>
+            <div>
+              <div class="mq-brand-name">宏观量化工作台</div>
+              <div class="mq-brand-sub">Macro Intelligence & Asset Allocation</div>
+            </div>
+          </div>
+          <div class="mq-live">数据工作台在线</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _hero(title: str, subtitle: str, eyebrow: str = "MACRO QUANT") -> None:
+    st.markdown(
+        f'<div class="mq-hero"><div class="mq-eyebrow">{eyebrow}</div>'
+        f'<h1>{title}</h1><p>{subtitle}</p></div>',
         unsafe_allow_html=True,
     )
 
@@ -161,58 +358,74 @@ def _cached_model(key: str) -> dict:
 
 def _corr_heatmap(matrix: list[list[float]], labels: list[str], title: str) -> go.Figure:
     df = pd.DataFrame(matrix, index=labels, columns=labels)
-    text = np.vectorize(lambda x: f"{float(x):+.2f}")(df.to_numpy())
+    cell_x: list[str] = []
+    cell_y: list[str] = []
+    cell_corr: list[float] = []
+    cell_text: list[str] = []
+    for row_name in labels:
+        for col_name in labels:
+            value = float(df.loc[row_name, col_name])
+            cell_x.append(col_name)
+            cell_y.append(row_name)
+            cell_corr.append(value)
+            cell_text.append(f"{value:+.2f}")
+
+    # Streamlit 不返回 Heatmap 单元格点击事件，因此用方形 Scatter
+    # 直接构成热力图。每个可见格子本身就是可选择点，无需透明覆盖层。
     fig = go.Figure(
-        go.Heatmap(
-            x=labels,
-            y=labels,
-            z=df.to_numpy(),
-            zmin=-1,
-            zmax=1,
-            colorscale="RdBu",
-            reversescale=True,
-            text=text,
-            texttemplate="%{text}",
-            textfont={"size": 13},
-            colorbar={"title": "ρ", "thickness": 12},
-            hovertemplate="%{y} × %{x}<br>ρ=%{z:.3f}<extra></extra>",
-        )
-    )
-    # Streamlit 暂不返回 Heatmap 单元格点击。叠加几乎透明的 Scatter，
-    # 让每个非对角格成为可选择点，并把 x/y 因子名送回 Python。
-    click_x: list[str] = []
-    click_y: list[str] = []
-    click_corr: list[float] = []
-    for i, row_name in enumerate(labels):
-        for j, col_name in enumerate(labels):
-            if i == j:
-                continue
-            click_x.append(col_name)
-            click_y.append(row_name)
-            click_corr.append(float(df.iloc[i, j]))
-    fig.add_trace(
         go.Scatter(
-            x=click_x,
-            y=click_y,
-            mode="markers",
-            customdata=np.asarray(click_corr)[:, None],
-            marker={"size": 34, "opacity": 0.01, "color": "#8f2d2d"},
+            x=cell_x,
+            y=cell_y,
+            mode="markers+text",
+            customdata=np.asarray(cell_corr)[:, None],
+            text=cell_text,
+            textposition="middle center",
+            textfont={"size": 13, "color": "#17202a"},
+            marker={
+                "symbol": "square",
+                "size": 62,
+                "color": cell_corr,
+                "cmin": -1,
+                "cmax": 1,
+                # 柔和的发散色，保证深色文字在高相关格子上仍清晰可读。
+                "colorscale": [
+                    [0.00, "#79a5c7"],
+                    [0.25, "#b7d0e1"],
+                    [0.50, "#f7f4ef"],
+                    [0.75, "#e8b9b3"],
+                    [1.00, "#d7837f"],
+                ],
+                "colorbar": {"title": "ρ", "thickness": 12},
+                "line": {"color": "rgba(255,255,255,.72)", "width": 2},
+            },
+            selected={"marker": {"opacity": 1}},
+            unselected={"marker": {"opacity": 1}},
             hovertemplate="%{y} × %{x}<br>ρ=%{customdata[0]:.3f}<extra>点击拆解</extra>",
             showlegend=False,
-            name="点击拆解",
+            name="相关系数",
         )
+    )
+    fig.update_xaxes(
+        side="top",
+        tickangle=-28,
+        categoryorder="array",
+        categoryarray=labels,
+        fixedrange=True,
+    )
+    fig.update_yaxes(
+        autorange="reversed",
+        categoryorder="array",
+        categoryarray=labels,
+        fixedrange=True,
     )
     fig.update_layout(
         title={"text": title, "x": 0.02, "xanchor": "left"},
         height=520,
-        margin=dict(l=12, r=12, t=52, b=12),
+        margin=dict(l=12, r=12, t=72, b=20),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="PingFang SC, Microsoft YaHei, sans-serif"),
-        dragmode="select",
         clickmode="event+select",
-        xaxis={"side": "top", "tickangle": -28},
-        yaxis={"autorange": "reversed"},
     )
     return fig
 
@@ -356,30 +569,13 @@ def _pair_drilldown(factor_a: str, factor_b: str, start: str, end: str) -> None:
     )
 
 
-def _compact_vol_monitor() -> None:
-    st.markdown('<div class="mq-section-title">周频波动警报</div>', unsafe_allow_html=True)
-    try:
-        mon = _cached_vol()
-    except Exception as exc:
-        st.warning(f"波动监控暂不可用：{exc}")
-        return
-    factors = mon.get("factors") or []
-    high = [f for f in factors if float(f.get("vol_percentile") or 0) >= 75]
-    shocks = mon.get("shocks") or []
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("风险状态", mon.get("status", "—"))
-    c2.metric("高波动因子", len(high))
-    c3.metric("本周冲击", len(shocks))
-    c4.metric("截至", mon.get("as_of", "—"))
-    st.caption(mon.get("status_note", ""))
-
-
 def page_matrix():
     _hero(
-        "宏观因子相关性对比矩阵",
-        "月频偏配置叙事，周频观察高频变化。点击任意非对角格，查看标准化序列、滚动相关与差异诊断。",
+        "宏观因子矩阵与风险警报",
+        "在一个页面查看周频风险警报、月频/周频相关矩阵与因子对拆解。点击任意非对角格即可生成下方图表。",
+        "RISK RADAR · CORRELATION",
     )
-    _compact_vol_monitor()
+    page_vol(embedded=True)
     st.markdown('<div class="mq-section-title">月频 vs 周频矩阵</div>', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
 
@@ -439,7 +635,7 @@ def page_matrix():
     if selected:
         st.session_state["selected_pair"] = selected
 
-    with st.expander("若设备上点击格子不方便，可手动选择因子对", expanded=False):
+    with st.expander("手动选择因子对", expanded=False):
         m1, m2 = st.columns(2)
         manual_a = m1.selectbox("因子 A", CORR_FACTORS, index=0)
         manual_b = m2.selectbox("因子 B", CORR_FACTORS, index=1)
@@ -453,67 +649,80 @@ def page_matrix():
         _pair_drilldown(pair[0], pair[1], common_start, common_end)
 
 
-def page_vol():
-    _hero("周频波动警报", "13 周波动分位、本周 2σ 冲击、资产暴露压力与未来 4 周高波动概率。")
-    st.markdown(
-        '<div class="mq-note">基于与暴露一致的周度 MoM：13 周波动分位 + 本周 2σ 冲击。</div>',
-        unsafe_allow_html=True,
-    )
+def page_vol(*, embedded: bool = False):
+    if embedded:
+        st.markdown('<div class="mq-section-title">周频因子风险警报</div>', unsafe_allow_html=True)
+    else:
+        _hero("周频波动警报", "13 周波动分位、本周 2σ 冲击、资产暴露压力与未来 4 周高波动概率。")
     try:
         mon = _cached_vol()
     except Exception as exc:
         st.error(f"波动监控加载失败：{exc}")
         return
 
-    st.metric("状态", mon.get("status", "—"))
+    factors = pd.DataFrame(mon.get("factors") or [])
+    shocks = pd.DataFrame(mon.get("shocks") or [])
+    pressure = pd.DataFrame(mon.get("asset_pressure") or [])
+    high_count = 0
+    if not factors.empty and "vol_percentile" in factors:
+        high_count = int((pd.to_numeric(factors["vol_percentile"], errors="coerce") >= 75).sum())
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("市场状态", mon.get("status", "—"))
+    m2.metric("高波动因子", high_count, help="13 周波动分位处于 75% 以上")
+    m3.metric("本周 2σ 冲击", len(shocks))
+    m4.metric("数据截至", mon.get("as_of", "—"))
     st.caption(mon.get("status_note", ""))
-    st.caption(f"截至 {mon.get('as_of', '—')}")
 
-    left, right = st.columns(2)
-    with left:
-        st.subheader("因子波动风险")
-        factors = pd.DataFrame(mon.get("factors") or [])
-        if factors.empty:
-            st.info("暂无因子波动数据")
-        else:
-            show = factors[["factor", "vol_percentile", "vol_level", "week_change", "shock_z", "is_shock"]].copy()
-            show.columns = ["因子", "波动分位", "水平", "本周变化", "冲击Z", "是否冲击"]
-            st.dataframe(show, width="stretch", hide_index=True)
+    with st.expander("查看警报明细与资产压力", expanded=False):
+        left, right = st.columns([1.18, 0.82])
+        with left:
+            st.markdown("**因子波动风险**")
+            if factors.empty:
+                st.info("暂无因子波动数据")
+            else:
+                show = factors[
+                    ["factor", "vol_percentile", "vol_level", "week_change", "shock_z", "is_shock"]
+                ].copy()
+                show.columns = ["因子", "波动分位", "水平", "本周变化", "冲击 Z", "是否冲击"]
+                st.dataframe(show, width="stretch", hide_index=True)
+        with right:
+            st.markdown("**本周冲击**")
+            if shocks.empty:
+                st.success("本周无明显冲击")
+            else:
+                st.dataframe(shocks, width="stretch", hide_index=True)
+            st.markdown("**资产暴露压力 Top 10**")
+            if pressure.empty:
+                st.info("暂无暴露压力")
+            else:
+                st.dataframe(pressure.head(10), width="stretch", hide_index=True)
 
-    with right:
-        st.subheader("本周冲击")
-        shocks = pd.DataFrame(mon.get("shocks") or [])
-        if shocks.empty:
-            st.success("本周无明显冲击")
-        else:
-            st.dataframe(shocks, width="stretch", hide_index=True)
-
-        st.subheader("暴露压力 Top")
-        pressure = pd.DataFrame(mon.get("asset_pressure") or [])
-        if pressure.empty:
-            st.info("暂无暴露压力")
-        else:
-            st.dataframe(pressure.head(10), width="stretch", hide_index=True)
-
-    st.subheader("波动风险预测（4 周）")
-    factor = st.selectbox(
-        "查看因子",
-        VOL_FACTORS,
-        index=VOL_FACTORS.index(DEFAULT_FACTOR) if DEFAULT_FACTOR in VOL_FACTORS else 0,
-    )
+    pred_left, pred_right = st.columns([0.34, 0.66], vertical_alignment="bottom")
+    with pred_left:
+        factor = st.selectbox(
+            "未来 4 周波动预测",
+            VOL_FACTORS,
+            index=VOL_FACTORS.index(DEFAULT_FACTOR) if DEFAULT_FACTOR in VOL_FACTORS else 0,
+        )
     try:
         pred = predict_factor(factor)
-        m1, m2, m3 = st.columns(3)
-        m1.metric("高波动概率", f"{100 * float(pred.get('prob_high_vol', 0)):.1f}%")
-        m2.metric("风险等级", pred.get("level") or "—")
-        m3.metric("预测高波动", "是" if pred.get("pred_high_vol") else "否")
+        with pred_right:
+            p1, p2, p3 = st.columns(3)
+            p1.metric("高波动概率", f"{100 * float(pred.get('prob_high_vol', 0)):.1f}%")
+            p2.metric("风险等级", pred.get("level") or "—")
+            p3.metric("预测高波动", "是" if pred.get("pred_high_vol") else "否")
         st.caption(pred.get("interpretation") or pred.get("note") or "")
     except Exception as exc:
         st.warning(f"波动预测暂不可用：{exc}")
 
 
 def page_exposure():
-    _hero("资产宏观因子暴露矩阵", "资产周度收益对宏观高频因子变化的 Bootstrap + Lasso 暴露。")
+    _hero(
+        "资产宏观因子暴露矩阵",
+        "资产周度收益对宏观高频因子变化的 Bootstrap + Lasso 暴露。",
+        "ASSET EXPOSURE",
+    )
     st.markdown(
         '<div class="mq-note">默认展示最新预计算结果；也可按结束周重算（Bootstrap 较慢，云端建议用预计算）。</div>',
         unsafe_allow_html=True,
@@ -568,7 +777,11 @@ def page_exposure():
 
 
 def page_model():
-    _hero("模型预测 · 大类配置", "LightGBM 截面信号 → Black-Litterman 观点 → CVaR / 均值方差组合。")
+    _hero(
+        "模型预测 · 大类配置",
+        "LightGBM 截面信号 → Black-Litterman 观点 → CVaR / 均值方差组合。",
+        "MODEL PORTFOLIO",
+    )
     st.markdown(
         '<div class="mq-note">滚动回测净值 / 回撤 / 最新配置权重。档位只改组合层，不改 LightGBM 信号。</div>',
         unsafe_allow_html=True,
@@ -634,7 +847,11 @@ def page_model():
 
 
 def page_assistant():
-    _hero("AI 宏观助手", "云端免费版保留项目资料检索；生成式问答需要可公开访问的 LLM 服务。")
+    _hero(
+        "AI 宏观助手",
+        "云端免费版保留项目资料检索；生成式问答需要可公开访问的 LLM 服务。",
+        "KNOWLEDGE SEARCH",
+    )
     st.info(
         "原站 AI 使用你电脑上的 Ollama（127.0.0.1），Streamlit Cloud 无法访问。"
         "这里先提供同一套 RAG 资料检索，数据页面功能不受影响。"
@@ -650,7 +867,11 @@ def page_assistant():
 
 
 def page_debate():
-    _hero("多 Agent 宏观辩论", "宏观、技术、情绪、风控四位专家与总协调人。")
+    _hero(
+        "多 Agent 宏观辩论",
+        "宏观、技术、情绪、风控四位专家与总协调人。",
+        "MULTI-AGENT DEBATE",
+    )
     st.warning(
         "该功能依赖 Ollama 本地模型。Streamlit Cloud 免费容器没有你的 qwen2.5:7b，"
         "因此无法在云端保持原功能；本地 FastAPI 版本仍可正常使用。"
@@ -669,22 +890,26 @@ def page_debate():
 
 
 def main():
-    st.caption("宏观量化工作台 · Streamlit Cloud · 与本地项目数据同源")
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-        ["因子矩阵", "波动警报", "因子暴露", "模型预测", "Agent辩论", "AI助手"]
+    _app_header()
+    pages = {
+        "◫  因子矩阵与警报": page_matrix,
+        "◇  因子暴露": page_exposure,
+        "↗  模型预测": page_model,
+        "◎  Agent 辩论": page_debate,
+        "⌕  AI 助手": page_assistant,
+    }
+    selected = st.radio(
+        "页面导航",
+        list(pages),
+        horizontal=True,
+        label_visibility="collapsed",
+        key="main_navigation",
     )
-    with tab1:
-        page_matrix()
-    with tab2:
-        page_vol()
-    with tab3:
-        page_exposure()
-    with tab4:
-        page_model()
-    with tab5:
-        page_debate()
-    with tab6:
-        page_assistant()
+    pages[selected]()
+    st.markdown(
+        '<div class="mq-footer">MACRO QUANT WORKSPACE · 数据与本地研究项目同源</div>',
+        unsafe_allow_html=True,
+    )
 
 
 if __name__ == "__main__":
