@@ -231,7 +231,7 @@ python3 app.py
 
 环境变量（可选）：`OLLAMA_HOST`、`OLLAMA_MODEL`（默认 `qwen2.5:7b`）。
 
-### Streamlit 入口（保留原界面）
+### Streamlit 公开网站（无需 Render）
 
 Streamlit Community Cloud 的 **Main file path** 填：
 
@@ -239,19 +239,17 @@ Streamlit Community Cloud 的 **Main file path** 填：
 streamlit_app.py
 ```
 
-本地预览（会自动拉起 FastAPI）：
+本地预览：
 
 ```bash
+pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-Cloud 无法单独暴露 FastAPI 端口，需先用 Render 部署本仓库，再在 Streamlit Secrets 填写：
+这是纯 Streamlit 版：直接调用 `web/` 下同一套数据模块，**不依赖 FastAPI / Render / 绑卡**。  
+包含：因子矩阵、波动警报、因子暴露、模型预测。AI 助手与 Agent 辩论仍依赖本机 Ollama，云端暂不开放。
 
-```toml
-BACKEND_URL = "https://你的-render-服务.onrender.com"
-```
-
-之后：本地修改 → `git push` → GitHub → Render 自动更新主站；Streamlit 全屏嵌入同一界面。
+之后：本地修改 → `git push` → GitHub → Streamlit Cloud 自动重新部署。
 
 ### 聊天助手能力
 

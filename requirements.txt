@@ -1,5 +1,9 @@
-# Streamlit Community Cloud 入口依赖
+# Streamlit Community Cloud — Main file path: streamlit_app.py
 streamlit>=1.32.0
-
-# 与 web 服务共用（本地自动拉起 FastAPI 时需要）
--r web/requirements.txt
+plotly>=5.18.0
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+joblib>=1.3.0
+matplotlib>=3.8.0
+pillow>=10.0.0
