@@ -9,6 +9,8 @@ Streamlit Community Cloud:
 
 from __future__ import annotations
 
+import hmac
+import os
 import sys
 from pathlib import Path
 
@@ -337,6 +339,34 @@ st.markdown(
         font-size: .75rem;
         text-align: center;
       }
+      .mq-login-brand {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        margin: 4px auto 16px;
+        border-radius: 17px;
+        color: white;
+        font-size: .9rem;
+        font-weight: 850;
+        letter-spacing: .09em;
+        background: linear-gradient(145deg, #d7837f, #b85f5c);
+        box-shadow: 0 12px 28px rgba(184,95,92,.22);
+      }
+      .mq-login-title {
+        margin: 0;
+        color: var(--mq-ink);
+        font-size: 1.45rem;
+        font-weight: 790;
+        text-align: center;
+      }
+      .mq-login-subtitle {
+        margin: 7px 0 18px;
+        color: var(--mq-muted);
+        font-size: .86rem;
+        line-height: 1.6;
+        text-align: center;
+      }
       @media (max-width: 760px) {
         .block-container { padding: .7rem .8rem 3rem; }
         .mq-topbar { padding-bottom: 10px; }
@@ -349,6 +379,59 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+def _configured_password() -> str:
+    """Read the password without committing it to the public repository."""
+    try:
+        secret = st.secrets.get("APP_PASSWORD")
+    except Exception:
+        secret = None
+    return str(secret or os.environ.get("APP_PASSWORD") or "")
+
+
+def _require_login() -> None:
+    if st.session_state.get("authenticated") is True:
+        return
+
+    _, center, _ = st.columns([1, 1.05, 1])
+    with center:
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="mq-login-brand">MQ</div>
+                <div class="mq-login-title">创作者访问</div>
+                <div class="mq-login-subtitle">
+                  此工作台为受保护内容，请输入创作者密码后继续。
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.form("creator_login", clear_on_submit=False):
+                password = st.text_input(
+                    "创作者密码",
+                    type="password",
+                    placeholder="请输入密码",
+                    key="login_password",
+                )
+                submitted = st.form_submit_button(
+                    "进入工作台",
+                    type="primary",
+                    width="stretch",
+                )
+
+            if submitted:
+                expected = _configured_password()
+                if not expected:
+                    st.error("网站尚未配置访问密码，请联系管理员。")
+                elif hmac.compare_digest(password, expected):
+                    st.session_state["authenticated"] = True
+                    st.session_state.pop("login_password", None)
+                    st.rerun()
+                else:
+                    st.error("密码错误，请重新输入。")
+
+    st.stop()
 
 
 def _hero(title: str, subtitle: str, eyebrow: str = "MACRO QUANT") -> None:
@@ -932,6 +1015,8 @@ def page_debate():
 
 
 def main():
+    _require_login()
+
     pages = {
         "▦  因子矩阵与警报": page_matrix,
         "◇  因子暴露": page_exposure,
@@ -968,6 +1053,9 @@ def main():
             """,
             unsafe_allow_html=True,
         )
+        if st.button("退出登录", width="stretch"):
+            st.session_state["authenticated"] = False
+            st.rerun()
     pages[selected]()
     st.markdown(
         '<div class="mq-footer">MACRO QUANT WORKSPACE · 数据与本地研究项目同源</div>',
